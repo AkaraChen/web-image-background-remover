@@ -29,3 +29,9 @@
 - 完成层级：Chromium 实测通过（1 passed, 3.6s）。Hub 请求被 abort，覆盖「模型失败笔刷仍可用」。
 - 证据：`e2e/evidence/results.json` — 画前 transparent=0；画后 40102 像素 alpha<250、minAlpha=3；撤销回到 0；重做 40102；导出 PNG 640×480、852345 bytes、transparent=40102。截图 `01-loaded.png` `02-brushed.png` `03-undone.png` `04-redone.png` `export.png`
 - 阻塞项：未测键盘 ⌘Z / 滚轮改半径 / 空格平移（测的是按钮撤销重做与鼠标描边）。未在有 WebGPU 的机器上测。
+
+## P1-01 · SAM encoder/decoder 拆分路径 + WASM 实测
+
+- 完成层级：路径落地（`src/sam.ts`），浏览器 WASM 跑通 SlimSAM q8；**未做 P1 UI**；WebGPU 推理 **missing proof**
+- 证据：Playwright `e2e/sam-feasibility.spec.ts` 1 passed / 4.1m。sessions `model` + `prompt_encoder_mask_decoder`。WASM 中位：640×480 encode 16407 ms / decode 274 ms；1000×1000 encode 18457 ms / decode 927 ms。`requestAdapter()` 为 null。Hub 体积见 `docs/sam-feasibility.md`。1000×1000 每笔 &lt;150 ms **WASM 未达标**
+- 阻塞项：无 WebGPU adapter，不能给 WebGPU 数字。SAM2.1 只量了 blob 体积，没跑推理。P2 未做。
