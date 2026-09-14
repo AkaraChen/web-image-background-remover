@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>抠图台 · 浏览器本地去背景</title>
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <span class="dot"></span>
+          <h1>抠图台</h1>
+          <span class="sub">模型跑在你自己的显卡上，图片不出本机</span>
+        </div>
+        <div class="badges">
+          <span class="badge" id="badge-device">检测中…</span>
+          <span class="badge" id="badge-model">未载入模型</span>
+        </div>
+      </header>
+
+      <main class="layout">
+        <!-- ─────────── 设置面板 ─────────── -->
+        <aside class="panel">
+          <section class="group">
+            <label class="field">
+              <span>模型</span>
+              <select id="sel-model"></select>
+            </label>
+            <p class="hint" id="model-note"></p>
+            <div class="row">
+              <label class="field">
+                <span>精度</span>
+                <select id="sel-dtype"></select>
+              </label>
+              <label class="field">
+                <span>后端</span>
+                <select id="sel-device">
+                  <option value="auto">自动</option>
+                  <option value="webgpu">WebGPU</option>
+                  <option value="wasm">WASM (CPU)</option>
+                </select>
+              </label>
+            </div>
+            <div class="actions">
+              <button id="btn-load" class="primary">载入模型</button>
+              <button id="btn-release" class="ghost">释放</button>
+            </div>
+            <div class="progress" id="progress" hidden>
+              <div class="bar"><i id="progress-fill"></i></div>
+              <span class="progress-label" id="progress-label"></span>
+            </div>
+          </section>
+
+          <hr />
+
+          <section class="group">
+            <h2>边缘</h2>
+            <label class="slider">
+              <span>阈值 <b id="val-threshold">0.50</b></span>
+              <input id="rng-threshold" type="range" min="0" max="0.95" step="0.01" value="0.5" />
+            </label>
+            <label class="slider">
+              <span>羽化 <b id="val-gamma">1.00</b></span>
+              <input id="rng-gamma" type="range" min="0.2" max="3" step="0.05" value="1" />
+            </label>
+            <label class="check">
+              <input id="chk-invert" type="checkbox" />
+              <span>反相遮罩（前景背景反了就勾这个）</span>
+            </label>
+          </section>
+
+          <hr />
+
+          <section class="group">
+            <h2>背景</h2>
+            <div class="segmented" id="bg-modes">
+              <button data-mode="transparent" class="active">透明</button>
+              <button data-mode="color">纯色</button>
+              <button data-mode="dim">留原图变暗</button>
+            </div>
+            <label class="field color-field" id="color-field" hidden>
+              <span>颜色</span>
+              <input id="inp-color" type="color" value="#2f6bff" />
+            </label>
+          </section>
+
+          <hr />
+
+          <section class="group">
+            <h2>输出</h2>
+            <div class="actions">
+              <button id="btn-download" class="primary" disabled>下载 PNG</button>
+              <button id="btn-download-mask" class="ghost" disabled>下载遮罩</button>
+            </div>
+            <p class="hint" id="timings">—</p>
+          </section>
+        </aside>
+
+        <!-- ─────────── 画布区 ─────────── -->
+        <section class="stage">
+          <div class="dropzone" id="dropzone">
+            <input id="file-input" type="file" accept="image/*" hidden />
+            <div class="empty" id="empty">
+              <svg viewBox="0 0 24 24" width="42" height="42" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12 16.5 6.75 11.25l1.4-1.4 2.85 2.8V4h2v8.65l2.85-2.8 1.4 1.4L12 16.5ZM5 20a2 2 0 0 1-2-2v-3h2v3h14v-3h2v3a2 2 0 0 1-2 2H5Z"
+                />
+              </svg>
+              <p class="big">把图片拖进来</p>
+              <p class="small">也可以 ⌘V 粘贴，或点击选择文件 · PNG / JPEG / WebP</p>
+            </div>
+
+            <div class="compare" id="compare" hidden>
+              <div class="frame" id="frame">
+                <div class="checker" id="checker"></div>
+                <img id="img-original" alt="原图" />
+                <canvas id="canvas-result"></canvas>
+                <div class="handle" id="handle"><span></span></div>
+              </div>
+            </div>
+            <div class="busy" id="busy" hidden><span class="spinner"></span><span id="busy-text">推理中…</span></div>
+          </div>
+          <p class="hint center" id="stage-hint">左键拖动中间的分隔条可以对比原图</p>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

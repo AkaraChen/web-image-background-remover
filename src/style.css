@@ -1,0 +1,184 @@
+:root {
+  --bg: #f6f7f9;
+  --card: #ffffff;
+  --fg: #14161a;
+  --muted: #6b7280;
+  --border: #e3e6ea;
+  --primary: #2f6bff;
+  --primary-fg: #fff;
+  --shadow: 0 1px 2px rgba(16, 20, 30, 0.06), 0 8px 24px rgba(16, 20, 30, 0.06);
+  --radius: 12px;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1014;
+    --card: #16191f;
+    --fg: #e8eaee;
+    --muted: #8b93a1;
+    --border: #262b33;
+    --primary: #4b83ff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 28px rgba(0, 0, 0, 0.35);
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app { display: flex; flex-direction: column; height: 100vh; }
+
+/* ── 顶栏 ── */
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 14px 20px; border-bottom: 1px solid var(--border);
+  background: var(--card); flex: 0 0 auto;
+}
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand h1 { font-size: 16px; margin: 0; letter-spacing: -0.01em; }
+.brand .sub { color: var(--muted); font-size: 12px; }
+.dot {
+  width: 9px; height: 9px; border-radius: 50%; background: var(--primary);
+  align-self: center; box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+.badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge {
+  font-size: 12px; padding: 4px 10px; border-radius: 999px;
+  border: 1px solid var(--border); color: var(--muted); background: transparent;
+  font-variant-numeric: tabular-nums;
+}
+.badge.ok { color: #0a8f4d; border-color: color-mix(in srgb, #0a8f4d 35%, var(--border)); }
+.badge.warn { color: #b45309; border-color: color-mix(in srgb, #b45309 35%, var(--border)); }
+
+/* ── 布局 ── */
+.layout { flex: 1 1 auto; display: grid; grid-template-columns: 300px 1fr; min-height: 0; }
+@media (max-width: 860px) { .layout { grid-template-columns: 1fr; } }
+
+.panel {
+  border-right: 1px solid var(--border); background: var(--card);
+  overflow-y: auto; padding: 4px 0;
+}
+@media (max-width: 860px) { .panel { border-right: 0; border-bottom: 1px solid var(--border); } }
+.group { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+.group h2 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0; font-weight: 600; }
+hr { border: 0; border-top: 1px solid var(--border); margin: 0; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+.field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); }
+.field > span { font-weight: 500; }
+select, input[type="color"] {
+  width: 100%; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--fg); font-size: 13px; font-family: inherit;
+}
+input[type="color"] { padding: 3px; height: 34px; cursor: pointer; }
+select:focus-visible, input:focus-visible, button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 60%, transparent); outline-offset: 1px;
+}
+
+button {
+  font: inherit; font-size: 13px; padding: 8px 14px; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--bg); color: var(--fg);
+  cursor: pointer; transition: filter .15s, background .15s, opacity .15s;
+}
+button:hover:not(:disabled) { filter: brightness(0.97); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button.primary { background: var(--primary); color: var(--primary-fg); border-color: transparent; font-weight: 600; }
+button.ghost { background: transparent; color: var(--muted); }
+.actions { display: flex; gap: 8px; }
+.actions button { flex: 1; }
+
+.hint { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+.hint.center { text-align: center; padding: 8px 0 0; }
+.color-field { flex-direction: row; align-items: center; justify-content: space-between; }
+.color-field input[type="color"] { width: 64px; }
+
+.slider { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.slider > span { display: flex; justify-content: space-between; }
+.slider b { color: var(--fg); font-variant-numeric: tabular-nums; font-weight: 600; }
+input[type="range"] { width: 100%; accent-color: var(--primary); }
+
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; color: var(--muted); cursor: pointer; }
+.check input { margin-top: 2px; accent-color: var(--primary); }
+
+.segmented { display: flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.segmented button { flex: 1; border: 0; border-radius: 0; background: transparent; color: var(--muted); font-size: 12px; padding: 7px 4px; }
+.segmented button + button { border-left: 1px solid var(--border); }
+.segmented button.active { background: color-mix(in srgb, var(--primary) 12%, transparent); color: var(--primary); font-weight: 600; }
+
+.progress { display: flex; flex-direction: column; gap: 5px; }
+.bar { height: 5px; border-radius: 999px; background: var(--border); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--primary); transition: width .2s; }
+.progress-label { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ── 画布区 ── */
+.stage { min-width: 0; display: flex; flex-direction: column; padding: 18px; overflow: hidden; }
+.dropzone {
+  position: relative; flex: 1 1 auto; min-height: 0; border-radius: var(--radius);
+  border: 1px solid var(--border); background: var(--card); box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+.dropzone.dragover { border-color: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent); }
+.empty { text-align: center; color: var(--muted); padding: 24px; }
+.empty .big { font-size: 15px; color: var(--fg); margin: 12px 0 4px; font-weight: 600; }
+.empty .small { font-size: 12px; margin: 0; }
+
+.checker {
+  position: absolute; inset: 0; z-index: 0; display: none; border-radius: 6px; overflow: hidden;
+  background-image:
+    linear-gradient(45deg, color-mix(in srgb, var(--fg) 8%, transparent) 25%, transparent 25%),
+    linear-gradient(-45deg, color-mix(in srgb, var(--fg) 8%, transparent) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, color-mix(in srgb, var(--fg) 8%, transparent) 75%),
+    linear-gradient(-45deg, transparent 75%, color-mix(in srgb, var(--fg) 8%, transparent) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.compare { position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; justify-content: center; }
+/* .frame gets an explicit pixel size from JS so img / canvas / handle stay aligned */
+.frame { position: relative; border-radius: 6px; }
+.compare img {
+  display: block; width: 100%; height: 100%; object-fit: contain;
+  border-radius: 6px; z-index: 1; user-select: none; -webkit-user-drag: none;
+}
+.compare canvas {
+  position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2;
+  border-radius: 6px; clip-path: inset(0 50% 0 0);
+}
+.handle {
+  position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; z-index: 3;
+  background: var(--primary); cursor: ew-resize; transform: translateX(-1px);
+  touch-action: none;
+}
+.handle span {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 30px; height: 30px; border-radius: 50%; background: var(--primary);
+  box-shadow: 0 2px 10px rgba(0,0,0,.25);
+}
+.handle span::before, .handle span::after {
+  content: ''; position: absolute; top: 50%; width: 0; height: 0;
+  border-top: 4px solid transparent; border-bottom: 4px solid transparent; margin-top: -4px;
+}
+.handle span::before { left: 8px; border-right: 5px solid var(--primary-fg); }
+.handle span::after { right: 8px; border-left: 5px solid var(--primary-fg); }
+
+.busy {
+  position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center;
+  gap: 10px; background: color-mix(in srgb, var(--card) 78%, transparent);
+  backdrop-filter: blur(2px); font-size: 13px; color: var(--muted);
+}
+.spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid var(--border); border-top-color: var(--primary);
+  animation: spin .7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#timings { white-space: pre-line; }
