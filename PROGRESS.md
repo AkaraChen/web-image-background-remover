@@ -23,3 +23,9 @@
 - 完成层级：`npx tsc --noEmit` 退出码 0；`npx vite build` 退出码 0（约 5.45s）
 - 证据：`brushMask` 标注为 `Uint8ClampedArray<ArrayBufferLike>`，对齐 `getImageData().data`；vite 产物 `dist/assets/index-BlnH671P.js`
 - 阻塞项：无（e2e 另计）
+
+## P0-04 · Playwright 真跑画笔 / 撤销重做 / PNG 导出
+
+- 完成层级：Chromium 实测通过（1 passed, 3.6s）。Hub 请求被 abort，覆盖「模型失败笔刷仍可用」。
+- 证据：`e2e/evidence/results.json` — 画前 transparent=0；画后 40102 像素 alpha<250、minAlpha=3；撤销回到 0；重做 40102；导出 PNG 640×480、852345 bytes、transparent=40102。截图 `01-loaded.png` `02-brushed.png` `03-undone.png` `04-redone.png` `export.png`
+- 阻塞项：未测键盘 ⌘Z / 滚轮改半径 / 空格平移（测的是按钮撤销重做与鼠标描边）。未在有 WebGPU 的机器上测。
