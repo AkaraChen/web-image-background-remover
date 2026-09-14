@@ -17,3 +17,9 @@
 - 完成层级：代码落地；拖入原图后立刻可画（`alpha` 先取原图通道，`infer` 失败不挡笔刷）；下载 PNG 走 `canvas-result.toBlob`（含笔刷）；撤销/重做按钮与 ⌘Z
 - 证据：`src/main.ts` `dst.a *= 1 - brushMask[i]/255`；`acceptFile` 里 `btnDownload.disabled = false` 且 `void infer(file)`；`index.html` 笔刷面板
 - 阻塞项：尚未 Playwright 真跑；下载「遮罩」仍是自动抠图 alpha，不含笔刷（cutout PNG 才含）
+
+## P0-03 · 类型检查与生产构建
+
+- 完成层级：`npx tsc --noEmit` 退出码 0；`npx vite build` 退出码 0（约 5.45s）
+- 证据：`brushMask` 标注为 `Uint8ClampedArray<ArrayBufferLike>`，对齐 `getImageData().data`；vite 产物 `dist/assets/index-BlnH671P.js`
+- 阻塞项：无（e2e 另计）
