@@ -3,10 +3,14 @@ import { MODELS, DTYPES, modelById, type Dtype, type ModelSpec } from './models'
 import {
   BrushEngine,
   clampRadius,
+  createStroke,
   extractAlpha,
   type Pt,
   type Stroke,
+  type StrokeKind,
 } from './brush';
+import { strokeToPrompts, type SamDevice } from './sam';
+import { SamClient } from './sam-client';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -34,6 +38,9 @@ const btnDownload = $<HTMLButtonElement>('btn-download');
 const btnDownloadMask = $<HTMLButtonElement>('btn-download-mask');
 const timings = $<HTMLParagraphElement>('timings');
 const toolModes = $<HTMLDivElement>('tool-modes');
+const promptModes = $<HTMLDivElement>('prompt-modes');
+const samStatusEl = $<HTMLParagraphElement>('sam-status');
+const strokeSourceEl = $<HTMLParagraphElement>('stroke-source');
 const rngRadius = $<HTMLInputElement>('rng-radius');
 const valRadius = $<HTMLElement>('val-radius');
 const btnUndo = $<HTMLButtonElement>('btn-undo');
@@ -57,6 +64,8 @@ const badgeModel = $<HTMLSpanElement>('badge-model');
 
 /* ─────────────────────────── 状态 ─────────────────────────── */
 type BgMode = 'transparent' | 'color' | 'dim';
+type Tool = 'compare' | 'erase' | 'restore';
+type PromptMode = 'geometry' | 'sam';
 
 interface Source {
   bitmap: ImageBitmap;
@@ -66,24 +75,45 @@ interface Source {
   url: string;
 }
 
+const params = new URLSearchParams(location.search);
+/** Test/debug only: force SlimSAM onto WASM even without WebGPU. */
+const forceSamWasm = params.get('sam') === 'wasm';
+
 let source: Source | null = null;
+let sourceBlob: Blob | null = null;
 let alpha: Uint8ClampedArray | null = null; // one byte per pixel, sized to the source
+let baseAlpha = new Uint8ClampedArray(0);
+let effectiveAlpha: Uint8ClampedArray<ArrayBufferLike> = new Uint8ClampedArray(0);
 let bgMode: BgMode = 'transparent';
 let splitAt = 0.5;
 let runSeq = 0;
 let loadedKey = '';
 let lastSpec: ModelSpec = MODELS[0];
+let webgpuAdapterOk = false;
 
-type Tool = 'compare' | 'brush';
 let tool: Tool = 'compare';
+let promptMode: PromptMode = 'geometry';
 let brushRadius = 24;
 const brush = new BrushEngine();
 let liveStroke: Stroke | null = null;
-let brushMask: Uint8ClampedArray<ArrayBufferLike> = new Uint8ClampedArray(0);
+let lastStrokeSource: 'geometry' | 'sam' = 'geometry';
+let lastStrokeNote = '—';
 let view = { zoom: 1, x: 0, y: 0 };
 let spaceDown = false;
 let panning = false;
 let panLast = { x: 0, y: 0 };
+let lastPointer: { clientX: number; clientY: number } | null = null;
+let samImageToken = 0;
+
+const sam = new SamClient(() => syncSamUi());
+
+function isBrush() {
+  return tool === 'erase' || tool === 'restore';
+}
+
+function brushKind(): StrokeKind {
+  return tool === 'restore' ? 'restore' : 'erase';
+}
 
 /* ─────────────────────────── 后端探测 ─────────────────────────── */
 const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
@@ -91,7 +121,7 @@ const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
 async function detectWebGPU(): Promise<boolean> {
   if (!hasWebGPU) return false;
   try {
-    const adapter = await (navigator as any).gpu.requestAdapter();
+    const adapter = await (navigator as Navigator & { gpu?: { requestAdapter: () => Promise<unknown> } }).gpu?.requestAdapter();
     return !!adapter;
   } catch {
     return false;
@@ -100,14 +130,17 @@ async function detectWebGPU(): Promise<boolean> {
 
 async function initDeviceBadge() {
   if (!hasWebGPU) {
+    webgpuAdapterOk = false;
     badgeDevice.textContent = '无 WebGPU · 走 WASM';
     badgeDevice.className = 'badge warn';
     selDevice.value = 'wasm';
+    syncSamUi();
     return;
   }
   const ok = await detectWebGPU();
+  webgpuAdapterOk = ok;
   if (ok) {
-    const adapter = await (navigator as any).gpu.requestAdapter();
+    const adapter = await (navigator as Navigator & { gpu?: { requestAdapter: () => Promise<any> } }).gpu!.requestAdapter();
     let label = 'WebGPU 可用';
     try {
       const info = adapter.info ?? (adapter.requestAdapterInfo ? await adapter.requestAdapterInfo() : null);
@@ -124,6 +157,20 @@ async function initDeviceBadge() {
     badgeDevice.className = 'badge warn';
     selDevice.value = 'wasm';
   }
+  syncSamUi();
+}
+
+function samBlockReason(): string | null {
+  if (forceSamWasm) return null;
+  if (!webgpuAdapterOk) {
+    return '无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），已回落几何。';
+  }
+  return null;
+}
+
+function pickSamBackend(): { device: SamDevice; dtype: string } {
+  if (forceSamWasm || !webgpuAdapterOk) return { device: 'wasm', dtype: 'q8' };
+  return { device: 'webgpu', dtype: 'fp16' };
 }
 
 /* ─────────────────────────── Worker ─────────────────────────── */
@@ -265,14 +312,32 @@ function scheduleRender() {
   });
 }
 
+function fillBaseAlpha(w: number, h: number, m: Uint8ClampedArray) {
+  if (baseAlpha.length !== w * h) baseAlpha = new Uint8ClampedArray(w * h);
+  const threshold = parseFloat(rngThreshold.value);
+  const gamma = parseFloat(rngGamma.value);
+  const invert = chkInvert.checked;
+  const thr = Math.min(threshold, 0.999);
+  const span = 1 - thr;
+  for (let i = 0; i < w * h; i++) {
+    let a = m[i] / 255;
+    if (invert) a = 1 - a;
+    a = span > 0 ? (a - thr) / span : a >= thr ? 1 : 0;
+    if (a < 0) a = 0;
+    else if (a > 1) a = 1;
+    a = Math.pow(a, gamma);
+    baseAlpha[i] = a * 255;
+  }
+}
+
 function render() {
   if (!source || !alpha) return;
   const { width: w, height: h } = source;
   const src = source.pixels;
   const m = alpha;
-  const threshold = parseFloat(rngThreshold.value);
-  const gamma = parseFloat(rngGamma.value);
-  const invert = chkInvert.checked;
+
+  fillBaseAlpha(w, h, m);
+  effectiveAlpha = brush.apply(baseAlpha, liveStroke);
 
   let r = 0, g = 0, b = 0;
   if (bgMode === 'color') {
@@ -284,19 +349,9 @@ function render() {
 
   const out = new ImageData(w, h);
   const dst = out.data;
-  // Threshold below ~1 is a soft ramp; gamma bends the falloff.
-  const thr = Math.min(threshold, 0.999);
-  const span = 1 - thr;
 
   for (let i = 0, p = 0; i < w * h; i++, p += 4) {
-    let a = m[i] / 255;
-    if (invert) a = 1 - a;
-    a = span > 0 ? (a - thr) / span : a >= thr ? 1 : 0;
-    if (a < 0) a = 0;
-    else if (a > 1) a = 1;
-    a = Math.pow(a, gamma);
-    if (brushMask.length === w * h) a *= 1 - brushMask[i] / 255;
-
+    const a = effectiveAlpha[i] / 255;
     const sr = src[p], sg = src[p + 1], sb = src[p + 2];
     if (bgMode === 'transparent') {
       dst[p] = sr; dst[p + 1] = sg; dst[p + 2] = sb; dst[p + 3] = a * 255;
@@ -306,7 +361,6 @@ function render() {
       dst[p + 2] = b * (1 - a) + sb * a;
       dst[p + 3] = 255;
     } else {
-      // keep the original behind a dimmed veil, so you can see what got cut
       const v = 0.22;
       dst[p] = sr * v * (1 - a) + sr * a;
       dst[p + 1] = sg * v * (1 - a) + sg * a;
@@ -349,8 +403,49 @@ function syncBrushUi() {
   valRadius.textContent = String(brushRadius);
 }
 
-function refreshBrushMask() {
-  brushMask = brush.mask(liveStroke);
+function syncSamUi() {
+  const blocked = samBlockReason();
+  let text: string;
+  let cls = '';
+  if (promptMode !== 'sam') {
+    text = blocked
+      ? `SAM：未加载 · ${blocked}`
+      : sam.status === 'ready'
+        ? 'SAM：就绪（当前用几何）'
+        : sam.status === 'loading' || sam.status === 'encoding'
+          ? `SAM：${sam.status === 'encoding' ? '编码中' : '加载中'}（当前用几何，可继续画）`
+          : sam.status === 'unavailable'
+            ? `SAM：不可用 · ${sam.reason}`
+            : 'SAM：未加载';
+  } else if (blocked) {
+    text = `SAM：不可用 · ${blocked}`;
+    cls = 'bad';
+  } else if (sam.status === 'unloaded') {
+    text = 'SAM：未加载';
+  } else if (sam.status === 'loading') {
+    text = `SAM：加载中${sam.reason ? ` · ${sam.reason}` : ''}（几何先顶着）`;
+    cls = 'warn';
+  } else if (sam.status === 'encoding') {
+    text = `SAM：编码图像中${sam.lastEncodeMs != null ? '' : ''}（几何先顶着）`;
+    cls = 'warn';
+  } else if (sam.status === 'ready') {
+    const backend = sam.device === 'webgpu' ? 'WebGPU' : 'WASM';
+    const ms = sam.lastEncodeMs != null ? ` · encode ${Math.round(sam.lastEncodeMs)} ms` : '';
+    text = `SAM：就绪 · ${backend}${sam.dtype ? ` ${sam.dtype}` : ''}${ms}`;
+    cls = 'ok';
+  } else {
+    text = `SAM：不可用 · ${sam.reason || '未知原因'}`;
+    cls = 'bad';
+  }
+  samStatusEl.textContent = text;
+  samStatusEl.className = `hint ${cls}`.trim();
+  strokeSourceEl.textContent = `上一笔：${lastStrokeNote}`;
+  for (const b of promptModes.querySelectorAll('button')) {
+    b.classList.toggle('active', b.dataset.prompt === promptMode);
+  }
+}
+
+function refreshComposite() {
   scheduleRender();
   syncBrushUi();
 }
@@ -370,19 +465,98 @@ function setTool(next: Tool) {
   for (const b of toolModes.querySelectorAll('button')) {
     b.classList.toggle('active', b.dataset.tool === next);
   }
-  dropzone.classList.toggle('brush-on', next === 'brush');
-  handle.hidden = next === 'brush';
-  stageHint.textContent =
-    next === 'brush'
-      ? '在图上涂抹即可擦除 · [ ] 调半径 · 空格拖动 · ⌘滚轮缩放'
-      : '左键拖动中间的分隔条可以对比原图';
-  if (next === 'brush') {
+  dropzone.classList.toggle('brush-on', isBrush());
+  handle.hidden = isBrush();
+  stageHint.textContent = isBrush()
+    ? `在图上涂抹即可${tool === 'restore' ? '恢复' : '擦除'} · [ ] 调半径 · 空格拖动 · ⌘滚轮缩放`
+    : '左键拖动中间的分隔条可以对比原图';
+  if (isBrush()) {
     canvasResult.style.clipPath = 'none';
     imgOriginal.style.clipPath = 'inset(0 0 0 100%)';
   } else {
     brushCursor.hidden = true;
     dropzone.style.cursor = '';
     setSplit(splitAt);
+  }
+}
+
+function setPromptMode(next: PromptMode) {
+  promptMode = next;
+  syncSamUi();
+  if (next === 'sam') void ensureSam();
+}
+
+async function ensureSam() {
+  if (promptMode !== 'sam') return;
+  const blocked = samBlockReason();
+  if (blocked) {
+    syncSamUi();
+    return;
+  }
+  try {
+    if (sam.status === 'unloaded' || sam.status === 'unavailable') {
+      const { device, dtype } = pickSamBackend();
+      await sam.load(device, dtype);
+    }
+    await encodeCurrentIfNeeded();
+  } catch {
+    /* SamClient already records the reason */
+  }
+}
+
+async function encodeCurrentIfNeeded() {
+  if (!sourceBlob || !source) return;
+  if (sam.status !== 'loading' && sam.status !== 'ready' && sam.status !== 'encoding') return;
+  const token = ++samImageToken;
+  try {
+    const encoded = await sam.encode(sourceBlob);
+    if (token !== samImageToken) return;
+    if (encoded.width !== source.width || encoded.height !== source.height) {
+      sam.status = 'unavailable';
+      sam.reason = `编码尺寸 ${encoded.width}×${encoded.height} 对不上图像`;
+      syncSamUi();
+    }
+  } catch {
+    /* status set by client */
+  }
+}
+
+function samCanDecode() {
+  return (
+    promptMode === 'sam' &&
+    !samBlockReason() &&
+    sam.status === 'ready' &&
+    !!source &&
+    sam.encodedSize?.width === source.width &&
+    sam.encodedSize?.height === source.height
+  );
+}
+
+async function refineWithSam(stroke: Stroke) {
+  if (!source || !samCanDecode()) return;
+  try {
+    const prompts = strokeToPrompts(stroke.points, source.width, source.height);
+    const res = await sam.decode(prompts.input_points, prompts.input_labels);
+    if (!source || res.width !== source.width || res.height !== source.height) {
+      lastStrokeNote = `几何（SAM 尺寸对不上，未替换）`;
+      lastStrokeSource = 'geometry';
+      syncSamUi();
+      return;
+    }
+    const live = brush.attachSamMask(stroke.id, res.mask);
+    if (!live) {
+      lastStrokeNote = `智能结果已附在撤销栈 · 候选 ${res.bestIndex + 1}/3`;
+      syncSamUi();
+      return;
+    }
+    lastStrokeSource = 'sam';
+    lastStrokeNote = `智能 · 候选 ${res.bestIndex + 1}/3 · IoU ${res.bestIou.toFixed(3)} · decode ${Math.round(res.decodeMs)} ms`;
+    refreshComposite();
+    syncSamUi();
+  } catch (err) {
+    lastStrokeSource = 'geometry';
+    lastStrokeNote = `几何（SAM 本笔失败：${shortError(err)}）`;
+    syncSamUi();
   }
 }
 
@@ -414,10 +588,12 @@ async function acceptFile(file: File | Blob) {
     pixels: imgData.data,
     url,
   };
+  sourceBlob = file;
   alpha = extractAlpha(imgData.data, bitmap.width, bitmap.height);
   brush.reset(bitmap.width, bitmap.height);
-  brushMask = brush.mask();
   liveStroke = null;
+  lastStrokeNote = '—';
+  lastStrokeSource = 'geometry';
   resetView();
 
   imgOriginal.src = url;
@@ -430,8 +606,10 @@ async function acceptFile(file: File | Blob) {
   btnDownload.disabled = false;
   btnDownloadMask.disabled = false;
   syncBrushUi();
+  syncSamUi();
   render();
 
+  if (promptMode === 'sam') void ensureSam();
   void infer(file);
 }
 
@@ -482,6 +660,7 @@ async function infer(blob: Blob) {
     }
 
     alpha = res.alpha;
+    brush.invalidate();
     render();
     btnDownload.disabled = false;
     btnDownloadMask.disabled = false;
@@ -550,6 +729,7 @@ btnRelease.addEventListener('click', () => {
   worker.postMessage({ type: 'dispose' });
   if (source) {
     alpha = extractAlpha(source.pixels, source.width, source.height);
+    brush.invalidate();
     scheduleRender();
     btnDownload.disabled = false;
     btnDownloadMask.disabled = false;
@@ -561,6 +741,7 @@ for (const el of [rngThreshold, rngGamma, chkInvert]) {
   el.addEventListener('input', () => {
     valThreshold.textContent = parseFloat(rngThreshold.value).toFixed(2);
     valGamma.textContent = parseFloat(rngGamma.value).toFixed(2);
+    brush.invalidate();
     scheduleRender();
   });
 }
@@ -613,7 +794,7 @@ const splitFromEvent = (e: PointerEvent | MouseEvent) => {
   setSplit((e.clientX - r.left) / r.width);
 };
 handle.addEventListener('pointerdown', (e) => {
-  if (tool === 'brush') return;
+  if (isBrush()) return;
   dragging = true;
   handle.setPointerCapture(e.pointerId);
   e.stopPropagation();
@@ -624,7 +805,7 @@ handle.addEventListener('pointerup', (e) => {
   handle.releasePointerCapture(e.pointerId);
 });
 compare.addEventListener('pointerdown', (e) => {
-  if (tool === 'brush' || spaceDown) return;
+  if (isBrush() || spaceDown) return;
   if ((e.target as HTMLElement).closest('.handle')) return;
   splitFromEvent(e);
 });
@@ -634,19 +815,25 @@ toolModes.addEventListener('click', (e) => {
   if (!btn?.dataset.tool) return;
   setTool(btn.dataset.tool as Tool);
 });
+promptModes.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('button');
+  if (!btn?.dataset.prompt) return;
+  setPromptMode(btn.dataset.prompt as PromptMode);
+});
 rngRadius.addEventListener('input', () => {
   brushRadius = clampRadius(parseFloat(rngRadius.value));
   syncBrushUi();
 });
 btnUndo.addEventListener('click', () => {
-  if (brush.undo()) refreshBrushMask();
+  if (brush.undo()) refreshComposite();
 });
 btnRedo.addEventListener('click', () => {
-  if (brush.redo()) refreshBrushMask();
+  if (brush.redo()) refreshComposite();
 });
 
-function placeCursor(e: PointerEvent | MouseEvent) {
-  if (tool !== 'brush' || !source || spaceDown) {
+function placeCursor(e: { clientX: number; clientY: number }) {
+  lastPointer = { clientX: e.clientX, clientY: e.clientY };
+  if (!isBrush() || !source || spaceDown) {
     brushCursor.hidden = true;
     return;
   }
@@ -658,6 +845,9 @@ function placeCursor(e: PointerEvent | MouseEvent) {
   brushCursor.style.height = `${size}px`;
   brushCursor.style.left = `${e.clientX}px`;
   brushCursor.style.top = `${e.clientY}px`;
+  brushCursor.classList.toggle('kind-erase', brushKind() === 'erase');
+  brushCursor.classList.toggle('kind-restore', brushKind() === 'restore');
+  brushCursor.classList.toggle('source-sam', samCanDecode());
 }
 
 compare.addEventListener('pointermove', (e) => {
@@ -672,7 +862,7 @@ compare.addEventListener('pointermove', (e) => {
     const pt = imageFromEvent(e);
     if (pt) {
       liveStroke.points.push(pt);
-      refreshBrushMask();
+      refreshComposite();
     }
   }
   placeCursor(e);
@@ -687,13 +877,13 @@ compare.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     return;
   }
-  if (tool !== 'brush') return;
+  if (!isBrush()) return;
   if (e.button !== 0) return;
   const pt = imageFromEvent(e);
   if (!pt) return;
-  liveStroke = { points: [pt], radius: brushRadius };
+  liveStroke = createStroke({ points: [pt], radius: brushRadius, kind: brushKind() });
   compare.setPointerCapture(e.pointerId);
-  refreshBrushMask();
+  refreshComposite();
   placeCursor(e);
   e.preventDefault();
 });
@@ -714,9 +904,18 @@ function endStroke(e: PointerEvent) {
     return;
   }
   if (!liveStroke) return;
-  brush.commit(liveStroke);
+  const stroke = liveStroke;
+  brush.commit(stroke);
   liveStroke = null;
-  refreshBrushMask();
+  lastStrokeSource = 'geometry';
+  lastStrokeNote = samCanDecode()
+    ? `几何占位 · 正在跑智能 decoder…`
+    : promptMode === 'sam'
+      ? `几何（${samBlockReason() || sam.reason || (sam.status === 'ready' ? '编码尚未完成' : sam.status === 'loading' || sam.status === 'encoding' ? 'SAM 尚未就绪' : 'SAM 不可用')}）`
+      : `几何 · ${stroke.kind === 'restore' ? '恢复' : '擦除'}`;
+  refreshComposite();
+  syncSamUi();
+  if (samCanDecode()) void refineWithSam(stroke);
   try {
     compare.releasePointerCapture(e.pointerId);
   } catch {
@@ -745,7 +944,7 @@ dropzone.addEventListener(
       applyView();
       return;
     }
-    if (tool === 'brush') {
+    if (isBrush()) {
       e.preventDefault();
       const step = e.deltaY < 0 ? 2 : -2;
       brushRadius = clampRadius(brushRadius + step);
@@ -766,26 +965,28 @@ window.addEventListener('keydown', (e) => {
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
     e.preventDefault();
     if (e.shiftKey) {
-      if (brush.redo()) refreshBrushMask();
+      if (brush.redo()) refreshComposite();
     } else if (brush.undo()) {
-      refreshBrushMask();
+      refreshComposite();
     }
     return;
   }
   if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') {
     e.preventDefault();
-    if (brush.redo()) refreshBrushMask();
+    if (brush.redo()) refreshComposite();
     return;
   }
   if (e.key === '[') {
     e.preventDefault();
     brushRadius = clampRadius(brushRadius - 2);
     syncBrushUi();
+    if (lastPointer) placeCursor(lastPointer);
   }
   if (e.key === ']') {
     e.preventDefault();
     brushRadius = clampRadius(brushRadius + 2);
     syncBrushUi();
+    if (lastPointer) placeCursor(lastPointer);
   }
 });
 window.addEventListener('keyup', (e) => {
@@ -797,6 +998,7 @@ window.addEventListener('keyup', (e) => {
 });
 
 setTool('compare');
+syncSamUi();
 
 // downloads
 function download(blob: Blob, name: string) {
@@ -811,17 +1013,13 @@ btnDownload.addEventListener('click', () => {
   canvasResult.toBlob((b) => b && download(b, `cutout-${Date.now()}.png`), 'image/png');
 });
 btnDownloadMask.addEventListener('click', () => {
-  if (!source || !alpha) return;
+  if (!source || effectiveAlpha.length !== source.width * source.height) return;
   const c = document.createElement('canvas');
   c.width = source.width;
   c.height = source.height;
   const ctx = c.getContext('2d')!;
   const out = ctx.createImageData(source.width, source.height);
-  let v = alpha;
-  if (chkInvert.checked) {
-    v = new Uint8ClampedArray(alpha.length);
-    for (let i = 0; i < alpha.length; i++) v[i] = 255 - alpha[i];
-  }
+  const v = effectiveAlpha;
   for (let i = 0, p = 0; i < v.length; i++, p += 4) {
     out.data[p] = out.data[p + 1] = out.data[p + 2] = v[i];
     out.data[p + 3] = 255;
@@ -835,3 +1033,38 @@ window.addEventListener('resize', fitFrame);
 
 setSplit(0.5);
 initDeviceBadge();
+
+(window as unknown as { __cutout: Record<string, unknown> }).__cutout = {
+  get brush() {
+    return brush;
+  },
+  get sam() {
+    return sam;
+  },
+  get promptMode() {
+    return promptMode;
+  },
+  get tool() {
+    return tool;
+  },
+  get lastStrokeSource() {
+    return lastStrokeSource;
+  },
+  get lastStrokeNote() {
+    return lastStrokeNote;
+  },
+  get forceSamWasm() {
+    return forceSamWasm;
+  },
+  get webgpuAdapterOk() {
+    return webgpuAdapterOk;
+  },
+  get effectiveAlpha() {
+    return effectiveAlpha;
+  },
+  get view() {
+    return view;
+  },
+};
+
+void isWebgpuLimitError;

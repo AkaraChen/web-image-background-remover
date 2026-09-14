@@ -1,13 +1,37 @@
 export type Pt = { x: number; y: number };
 
+export type StrokeKind = 'erase' | 'restore';
+export type StrokeSource = 'geometry' | 'sam';
+
 export interface Stroke {
+  id: number;
   points: Pt[];
   radius: number;
+  kind: StrokeKind;
+  source: StrokeSource;
+  /** SAM decoder output, 0–255, image-sized. Geometry is re-rasterized. */
+  samMask?: Uint8ClampedArray;
 }
 
 export const BRUSH_MIN = 4;
 export const BRUSH_MAX = 160;
 export const FEATHER_PX = 1.25;
+
+let nextStrokeId = 1;
+
+export function createStroke(init: {
+  points: Pt[];
+  radius: number;
+  kind: StrokeKind;
+  source?: StrokeSource;
+  samMask?: Uint8ClampedArray;
+}): Stroke {
+  return {
+    id: nextStrokeId++,
+    source: 'geometry',
+    ...init,
+  };
+}
 
 export function clampRadius(r: number): number {
   return Math.max(BRUSH_MIN, Math.min(BRUSH_MAX, Math.round(r)));
@@ -63,7 +87,7 @@ function ctx2d(canvas: OffscreenCanvas | HTMLCanvasElement): OffscreenCanvasRend
 
 export function paintStroke(
   ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D,
-  stroke: Stroke,
+  stroke: Pick<Stroke, 'points' | 'radius'>,
 ): void {
   if (stroke.points.length === 0) return;
   const spacing = Math.max(1, stroke.radius * 0.32);
@@ -86,6 +110,45 @@ export function readMask(canvas: OffscreenCanvas | HTMLCanvasElement, width: num
   const mask = new Uint8ClampedArray(width * height);
   for (let i = 0, p = 3; i < mask.length; i++, p += 4) mask[i] = data[p];
   return mask;
+}
+
+function featherCanvas(ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D, width: number, height: number) {
+  const src = makeCanvas(width, height);
+  ctx2d(src).drawImage(ctx.canvas, 0, 0);
+  ctx.filter = `blur(${FEATHER_PX}px)`;
+  ctx.clearRect(0, 0, width, height);
+  ctx.drawImage(src, 0, 0);
+  ctx.filter = 'none';
+}
+
+export function rasterizeStroke(
+  stroke: Pick<Stroke, 'points' | 'radius'>,
+  width: number,
+  height: number,
+  feather = true,
+): Uint8ClampedArray {
+  const canvas = makeCanvas(width, height);
+  const ctx = ctx2d(canvas);
+  ctx.clearRect(0, 0, width, height);
+  paintStroke(ctx, stroke);
+  if (feather && stroke.points.length > 0) featherCanvas(ctx, width, height);
+  return readMask(canvas, width, height);
+}
+
+/** Mutates `alpha` in place. `kind` is order-sensitive: later strokes cover earlier ones. */
+export function mixAlpha(alpha: Uint8ClampedArray, mask: Uint8ClampedArray, kind: StrokeKind): void {
+  const n = Math.min(alpha.length, mask.length);
+  if (kind === 'erase') {
+    for (let i = 0; i < n; i++) {
+      alpha[i] = alpha[i] * (1 - mask[i] / 255);
+    }
+  } else {
+    for (let i = 0; i < n; i++) {
+      const a = alpha[i] / 255;
+      const m = mask[i] / 255;
+      alpha[i] = (a + (1 - a) * m) * 255;
+    }
+  }
 }
 
 export class StrokeStack {
@@ -116,6 +179,10 @@ export class StrokeStack {
     this.redoStack = [];
   }
 
+  find(id: number): Stroke | undefined {
+    return this.strokes.find((s) => s.id === id) ?? this.redoStack.find((s) => s.id === id);
+  }
+
   get canUndo() {
     return this.strokes.length > 0;
   }
@@ -125,66 +192,93 @@ export class StrokeStack {
   }
 }
 
-/** Rasterize strokes into a 0–255 erase mask. History is the stroke list, not snapshots. */
+/**
+ * Replay strokes onto a base alpha. History is the stroke list.
+ * Geometry is re-rasterized; SAM results are stored on the stroke so undo
+ * does not re-run the decoder.
+ */
 export class BrushEngine {
   width = 0;
   height = 0;
   readonly stack = new StrokeStack();
-  private committed: OffscreenCanvas | HTMLCanvasElement | null = null;
+  private rasterCache = new Map<number, Uint8ClampedArray>();
+  private committed: Uint8ClampedArray | null = null;
+  private committedFrom: Uint8ClampedArray | null = null;
 
   reset(width: number, height: number) {
     this.width = width;
     this.height = height;
     this.stack.clear();
-    this.committed = makeCanvas(width, height);
-    ctx2d(this.committed).clearRect(0, 0, width, height);
+    this.rasterCache.clear();
+    this.committed = null;
+    this.committedFrom = null;
   }
 
-  private rebuildCommitted() {
-    const canvas = makeCanvas(this.width, this.height);
-    const ctx = ctx2d(canvas);
-    ctx.clearRect(0, 0, this.width, this.height);
-    for (const stroke of this.stack.strokes) {
-      paintStroke(ctx, stroke);
+  invalidate() {
+    this.committed = null;
+    this.committedFrom = null;
+  }
+
+  private strokeMask(stroke: Stroke, feather: boolean): Uint8ClampedArray {
+    if (stroke.source === 'sam' && stroke.samMask && stroke.samMask.length === this.width * this.height) {
+      return stroke.samMask;
     }
-    if (this.stack.strokes.length > 0) this.feather(ctx);
-    this.committed = canvas;
+    const cached = this.rasterCache.get(stroke.id);
+    if (cached) return cached;
+    const mask = rasterizeStroke(stroke, this.width, this.height, feather);
+    this.rasterCache.set(stroke.id, mask);
+    return mask;
   }
 
-  private feather(ctx: OffscreenCanvasRenderingContext2D | CanvasRenderingContext2D) {
-    const src = makeCanvas(this.width, this.height);
-    ctx2d(src).drawImage(ctx.canvas, 0, 0);
-    ctx.filter = `blur(${FEATHER_PX}px)`;
-    ctx.clearRect(0, 0, this.width, this.height);
-    ctx.drawImage(src, 0, 0);
-    ctx.filter = 'none';
+  private rebuildCommitted(base: Uint8ClampedArray) {
+    const out = new Uint8ClampedArray(base);
+    for (const stroke of this.stack.strokes) {
+      mixAlpha(out, this.strokeMask(stroke, true), stroke.kind);
+    }
+    this.committed = out;
+    this.committedFrom = base;
   }
 
   commit(stroke: Stroke) {
     if (stroke.points.length === 0) return;
     this.stack.push(stroke);
-    this.rebuildCommitted();
+    this.invalidate();
+  }
+
+  attachSamMask(id: number, mask: Uint8ClampedArray): boolean {
+    const stroke = this.stack.find(id);
+    if (!stroke) return false;
+    stroke.source = 'sam';
+    stroke.samMask = mask;
+    this.rasterCache.delete(id);
+    this.invalidate();
+    return this.stack.strokes.some((s) => s.id === id);
   }
 
   undo(): boolean {
     if (!this.stack.undo()) return false;
-    this.rebuildCommitted();
+    this.invalidate();
     return true;
   }
 
   redo(): boolean {
     if (!this.stack.redo()) return false;
-    this.rebuildCommitted();
+    this.invalidate();
     return true;
   }
 
-  mask(live: Stroke | null = null): Uint8ClampedArray {
-    if (!this.committed || this.width === 0) return new Uint8ClampedArray(0);
-    if (!live || live.points.length === 0) return readMask(this.committed, this.width, this.height);
-    const canvas = makeCanvas(this.width, this.height);
-    const ctx = ctx2d(canvas);
-    ctx.drawImage(this.committed, 0, 0);
-    paintStroke(ctx, live);
-    return readMask(canvas, this.width, this.height);
+  /** Start from `base` (auto-cutout alpha) and replay strokes in order. */
+  apply(base: Uint8ClampedArray, live: Stroke | null = null): Uint8ClampedArray {
+    if (this.width === 0 || base.length !== this.width * this.height) {
+      return new Uint8ClampedArray(base);
+    }
+    if (!this.committed || this.committedFrom !== base) {
+      this.rebuildCommitted(base);
+    }
+    const committed = this.committed!;
+    if (!live || live.points.length === 0) return new Uint8ClampedArray(committed);
+    const out = new Uint8ClampedArray(committed);
+    mixAlpha(out, rasterizeStroke(live, this.width, this.height, false), live.kind);
+    return out;
   }
 }

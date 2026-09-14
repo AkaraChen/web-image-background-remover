@@ -12,7 +12,17 @@ Measured at 2026-09-14T15:19:42.280Z. Raw dump: `docs/sam-feasibility.json`.
 2. `encodeImage` → `SamModel.get_image_embeddings({ pixel_values })` once per image
 3. `decodePrompt` → `model({ image_embeddings, image_positional_embeddings, input_points, input_labels })` then `processor.post_process_masks`
 
-P1 UI was **not** added. Issue gate is per-stroke < 150 ms at 1000×1000 after encoder cache.
+## P1 UI (wired)
+
+Main thread never runs encoder/decoder. `src/sam-worker.ts` owns `loadSlimSam` / `encodeImage` / `decodePrompt`. Embeddings stay in the worker; the page only receives the best mask (`iou_scores` argmax of 3 candidates).
+
+**When SAM is used:** WebGPU adapter present, or `?sam=wasm` (test/debug). No adapter and no flag → geometry fallback, no load.
+
+**Negative points:** `strokeToPrompts` labels stroke samples `1`, then up to 3 image-corner points that sit **outside** the stroke bbox (padded by max(16px, 2% of min side)). If the stroke covers every corner, one image-edge midpoint farthest from the bbox center is used. No separate exclude-point tool in this pass; a restore stroke is the user-facing correction.
+
+**Per-stroke SAM mask is stored on the stroke** so undo/replay does not re-decode. That is an exception to P0's "don't snapshot composite masks". Geometry strokes are still re-rasterized.
+
+Issue gate is per-stroke < 150 ms at 1000×1000 after encoder cache.
 
 ## WebGPU
 

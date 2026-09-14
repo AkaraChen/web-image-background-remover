@@ -197,3 +197,21 @@ input[type="range"] { width: 100%; accent-color: var(--primary); }
   pointer-events: none;
   transform: translate(-50%, -50%);
 }
+.brush-cursor.kind-erase {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 1px rgba(90, 0, 0, 0.55);
+}
+.brush-cursor.kind-restore {
+  border-color: #3dcc7a;
+  box-shadow: 0 0 0 1px rgba(0, 70, 24, 0.55);
+}
+.brush-cursor.source-sam::after {
+  content: '';
+  position: absolute;
+  inset: 18%;
+  border: 1px dashed rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+}
+#sam-status.ok { color: #0a8f4d; }
+#sam-status.warn { color: #b45309; }
+#sam-status.bad { color: #b42318; }

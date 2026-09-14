@@ -91,10 +91,17 @@
             <h2>笔刷</h2>
             <div class="segmented" id="tool-modes">
               <button type="button" data-tool="compare" class="active" data-testid="tool-compare">对比</button>
-              <button type="button" data-tool="brush" data-testid="tool-brush">擦除笔</button>
+              <button type="button" data-tool="erase" data-testid="tool-brush">擦除</button>
+              <button type="button" data-tool="restore" data-testid="tool-restore">恢复</button>
             </div>
+            <div class="segmented" id="prompt-modes">
+              <button type="button" data-prompt="geometry" class="active" data-testid="prompt-geometry">几何</button>
+              <button type="button" data-prompt="sam" data-testid="prompt-sam">智能</button>
+            </div>
+            <p class="hint" id="sam-status" data-testid="sam-status">SAM：未加载</p>
+            <p class="hint" id="stroke-source" data-testid="stroke-source">上一笔：—</p>
             <label class="slider">
-              <span>半径 <b id="val-radius">24</b></span>
+              <span>半径 <b id="val-radius" data-testid="val-radius">24</b></span>
               <input id="rng-radius" data-testid="rng-radius" type="range" min="4" max="160" step="1" value="24" />
             </label>
             <div class="actions">
@@ -110,7 +117,7 @@
             <h2>输出</h2>
             <div class="actions">
               <button id="btn-download" class="primary" disabled data-testid="btn-download">下载 PNG</button>
-              <button id="btn-download-mask" class="ghost" disabled>下载遮罩</button>
+              <button id="btn-download-mask" class="ghost" disabled data-testid="btn-download-mask">下载遮罩</button>
             </div>
             <p class="hint" id="timings">—</p>
           </section>
