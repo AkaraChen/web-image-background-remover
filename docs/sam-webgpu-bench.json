@@ -1,0 +1,35 @@
+{
+  "measuredBy": "review pass, Apple-silicon Mac, Chrome 140, device=webgpu",
+  "harness": "sam-webgpu-bench.html + src/sam-webgpu-bench.ts (same loadSam/encode/decode path as src/sam.ts)",
+  "method": "1 warmup encode+decode per size, then 5 timed runs; medians reported; synthetic 640x480 / 1000x1000 canvas images",
+  "device": "webgpu",
+  "dtype": "fp16",
+  "webgpuApi": true,
+  "webgpuAdapter": {},
+  "webgpuError": null,
+  "loadMs": 21368,
+  "noteOnLoadMs": "one-time: SlimSAM download + WebGPU session build, cached afterwards",
+  "runs": {
+    "640x480": {
+      "encodeMs": [1161, 1033, 1048, 1034, 1041],
+      "encodeMedianMs": 1041,
+      "decodeMs": [33, 34, 36, 34, 37],
+      "decodeMedianMs": 34,
+      "warmupEncodeMs": 1948,
+      "warmupDecodeMs": 738,
+      "iouScores": [0.93, 1.01, 0.991],
+      "maskDims": [1, 3, 480, 640]
+    },
+    "1000x1000": {
+      "encodeMs": [1051, 1066, 1060, 1053, 1025],
+      "encodeMedianMs": 1053,
+      "decodeMs": [36, 32, 36, 34, 35],
+      "decodeMedianMs": 35,
+      "warmupEncodeMs": 1036,
+      "warmupDecodeMs": 35,
+      "iouScores": [0.973, 1.011, 0.952],
+      "maskDims": [1, 3, 1000, 1000]
+    }
+  },
+  "verdict": "measured"
+}

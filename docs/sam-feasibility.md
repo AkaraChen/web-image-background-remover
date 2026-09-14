@@ -62,3 +62,37 @@ q8 pair ≈ 8.5 + 4.7 MB. fp16 pair ≈ 11.6 + 8.2 MB.
 Encoder+data fp32 ≈ 0.3 + 127.9 MB. fp16 ≈ 0.3 + 63.9 MB. quantized ≈ 0.4 + 50.1 MB. Decoder+data fp32 ≈ 0.2 + 20 MB.
 
 SAM2.1 **runtime was not run**. Only blob sizes.
+
+---
+
+## WebGPU numbers (review pass, Apple-silicon host)
+
+The WASM numbers above leave the P1 gate open: issue #1 asks for **<150 ms per stroke at 1000x1000**,
+and WASM decode is 927 ms. Measured on an Apple-silicon Mac (Chrome 140, `device: 'webgpu'`,
+`dtype: 'fp16'`), same encode/decode split through `src/sam.ts`: 1 warmup then 5 timed runs per size.
+
+| input | WASM (q8, builder) | WebGPU (fp16, Apple GPU) |
+| --- | --- | --- |
+| 640x480 encode | 16407 ms | **1041 ms** |
+| 640x480 decode | 274 ms | **34 ms** |
+| 1000x1000 encode | 18457 ms | **1053 ms** |
+| 1000x1000 decode | 927 ms | **35 ms** |
+
+**Verdict: the <150 ms per-stroke bar passes on WebGPU (35 ms at 1000x1000) and fails on WASM
+(927 ms).** One-time `loadMs` = 21368 ms (~21 s download + session build, cached afterwards);
+encoder is a further ~1 s per image, so the one-shot-encoder / per-stroke-decoder split is what
+makes the interaction viable. `maskDims` = `[1,3,1000,1000]` confirms 3 candidate masks come back
+at full input resolution, matching the multimask contract.
+
+Raw result: `docs/sam-webgpu-bench.json`.
+Reproduce: `npx vite`, open `/sam-webgpu-bench.html`, read `window.__BENCH__`.
+
+Stated limits, so this is not read as more than it is:
+- **The two columns use different quantization** (WASM q8 / WebGPU fp16). Each backend is measured
+  at the dtype that backend would actually run, so the ratio is not a pure backend comparison.
+  An fp32 WebGPU run was measured first and was *worse* (encode 1691 / decode 40 at 640x480),
+  so fp16 is not a strawman in WebGPU's favour.
+- Synthetic canvas images, not photographs: these are timing runs, not quality runs.
+- Single machine, single browser build, one run per cell (median of 5). No cross-device spread.
+- `warmupDecodeMs` (738 ms at 640x480) is first-call shader compilation; it is excluded from the
+  median on purpose and reported so the exclusion is visible.
