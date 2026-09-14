@@ -182,3 +182,18 @@ input[type="range"] { width: 100%; accent-color: var(--primary); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 #timings { white-space: pre-line; }
+
+.dropzone.brush-on { cursor: none; }
+.dropzone.brush-on .compare { touch-action: none; }
+.dropzone.panning, .dropzone.panning * { cursor: grab !important; }
+.dropzone.panning.is-panning, .dropzone.panning.is-panning * { cursor: grabbing !important; }
+.handle[hidden] { display: none !important; }
+.brush-cursor {
+  position: fixed;
+  z-index: 8;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}

@@ -88,9 +88,28 @@
           <hr />
 
           <section class="group">
+            <h2>笔刷</h2>
+            <div class="segmented" id="tool-modes">
+              <button type="button" data-tool="compare" class="active" data-testid="tool-compare">对比</button>
+              <button type="button" data-tool="brush" data-testid="tool-brush">擦除笔</button>
+            </div>
+            <label class="slider">
+              <span>半径 <b id="val-radius">24</b></span>
+              <input id="rng-radius" data-testid="rng-radius" type="range" min="4" max="160" step="1" value="24" />
+            </label>
+            <div class="actions">
+              <button type="button" id="btn-undo" data-testid="btn-undo" disabled>撤销</button>
+              <button type="button" id="btn-redo" data-testid="btn-redo" disabled>重做</button>
+            </div>
+            <p class="hint">[ ] 或滚轮调大小 · ⌘Z 撤销 · ⇧⌘Z 重做 · 空格拖动 · ⌘滚轮缩放。不跑模型也能用。</p>
+          </section>
+
+          <hr />
+
+          <section class="group">
             <h2>输出</h2>
             <div class="actions">
-              <button id="btn-download" class="primary" disabled>下载 PNG</button>
+              <button id="btn-download" class="primary" disabled data-testid="btn-download">下载 PNG</button>
               <button id="btn-download-mask" class="ghost" disabled>下载遮罩</button>
             </div>
             <p class="hint" id="timings">—</p>
@@ -99,8 +118,8 @@
 
         <!-- ─────────── 画布区 ─────────── -->
         <section class="stage">
-          <div class="dropzone" id="dropzone">
-            <input id="file-input" type="file" accept="image/*" hidden />
+          <div class="dropzone" id="dropzone" data-testid="dropzone">
+            <input id="file-input" data-testid="file-input" type="file" accept="image/*" hidden />
             <div class="empty" id="empty">
               <svg viewBox="0 0 24 24" width="42" height="42" aria-hidden="true">
                 <path
@@ -112,15 +131,16 @@
               <p class="small">也可以 ⌘V 粘贴，或点击选择文件 · PNG / JPEG / WebP</p>
             </div>
 
-            <div class="compare" id="compare" hidden>
+            <div class="compare" id="compare" data-testid="compare" hidden>
               <div class="frame" id="frame">
                 <div class="checker" id="checker"></div>
                 <img id="img-original" alt="原图" />
-                <canvas id="canvas-result"></canvas>
+                <canvas id="canvas-result" data-testid="canvas-result"></canvas>
                 <div class="handle" id="handle"><span></span></div>
               </div>
             </div>
             <div class="busy" id="busy" hidden><span class="spinner"></span><span id="busy-text">推理中…</span></div>
+            <div id="brush-cursor" class="brush-cursor" hidden></div>
           </div>
           <p class="hint center" id="stage-hint">左键拖动中间的分隔条可以对比原图</p>
         </section>

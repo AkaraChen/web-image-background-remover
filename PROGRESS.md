@@ -11,3 +11,9 @@
 - 完成层级：代码落地，尚未经 Playwright 真画
 - 证据：`src/brush.ts` — `StrokeStack` 只存 stroke；`BrushEngine.mask()` 每次从 stroke 重栅格化成一通道 0–255；软边径向渐变 + 抬笔后 `blur(1.25px)` 羽化
 - 阻塞项：接入 UI / render / PNG 导出见 P0-02；浏览器实测见后续 e2e
+
+## P0-02 · 接入画布、合成与 PNG 导出
+
+- 完成层级：代码落地；拖入原图后立刻可画（`alpha` 先取原图通道，`infer` 失败不挡笔刷）；下载 PNG 走 `canvas-result.toBlob`（含笔刷）；撤销/重做按钮与 ⌘Z
+- 证据：`src/main.ts` `dst.a *= 1 - brushMask[i]/255`；`acceptFile` 里 `btnDownload.disabled = false` 且 `void infer(file)`；`index.html` 笔刷面板
+- 阻塞项：尚未 Playwright 真跑；下载「遮罩」仍是自动抠图 alpha，不含笔刷（cutout PNG 才含）

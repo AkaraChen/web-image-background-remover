@@ -1,5 +1,12 @@
 import './style.css';
 import { MODELS, DTYPES, modelById, type Dtype, type ModelSpec } from './models';
+import {
+  BrushEngine,
+  clampRadius,
+  extractAlpha,
+  type Pt,
+  type Stroke,
+} from './brush';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 
@@ -26,6 +33,13 @@ const inpColor = $<HTMLInputElement>('inp-color');
 const btnDownload = $<HTMLButtonElement>('btn-download');
 const btnDownloadMask = $<HTMLButtonElement>('btn-download-mask');
 const timings = $<HTMLParagraphElement>('timings');
+const toolModes = $<HTMLDivElement>('tool-modes');
+const rngRadius = $<HTMLInputElement>('rng-radius');
+const valRadius = $<HTMLElement>('val-radius');
+const btnUndo = $<HTMLButtonElement>('btn-undo');
+const btnRedo = $<HTMLButtonElement>('btn-redo');
+const brushCursor = $<HTMLDivElement>('brush-cursor');
+const stageHint = $<HTMLParagraphElement>('stage-hint');
 
 const dropzone = $<HTMLDivElement>('dropzone');
 const empty = $<HTMLDivElement>('empty');
@@ -59,6 +73,17 @@ let splitAt = 0.5;
 let runSeq = 0;
 let loadedKey = '';
 let lastSpec: ModelSpec = MODELS[0];
+
+type Tool = 'compare' | 'brush';
+let tool: Tool = 'compare';
+let brushRadius = 24;
+const brush = new BrushEngine();
+let liveStroke: Stroke | null = null;
+let brushMask = new Uint8ClampedArray(0);
+let view = { zoom: 1, x: 0, y: 0 };
+let spaceDown = false;
+let panning = false;
+let panLast = { x: 0, y: 0 };
 
 /* ─────────────────────────── 后端探测 ─────────────────────────── */
 const hasWebGPU = typeof navigator !== 'undefined' && 'gpu' in navigator;
@@ -270,6 +295,7 @@ function render() {
     if (a < 0) a = 0;
     else if (a > 1) a = 1;
     a = Math.pow(a, gamma);
+    if (brushMask.length === w * h) a *= 1 - brushMask[i] / 255;
 
     const sr = src[p], sg = src[p + 1], sb = src[p + 2];
     if (bgMode === 'transparent') {
@@ -303,6 +329,61 @@ function fitFrame() {
   const scale = Math.min(cw / source.width, ch / source.height, 1);
   frame.style.width = `${Math.round(source.width * scale)}px`;
   frame.style.height = `${Math.round(source.height * scale)}px`;
+  applyView();
+}
+
+function applyView() {
+  frame.style.transformOrigin = 'center center';
+  frame.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
+}
+
+function resetView() {
+  view = { zoom: 1, x: 0, y: 0 };
+  applyView();
+}
+
+function syncBrushUi() {
+  btnUndo.disabled = !brush.stack.canUndo;
+  btnRedo.disabled = !brush.stack.canRedo;
+  rngRadius.value = String(brushRadius);
+  valRadius.textContent = String(brushRadius);
+}
+
+function refreshBrushMask() {
+  brushMask = brush.mask(liveStroke);
+  scheduleRender();
+  syncBrushUi();
+}
+
+function imageFromEvent(e: PointerEvent | MouseEvent): Pt | null {
+  if (!source) return null;
+  const r = canvasResult.getBoundingClientRect();
+  if (r.width <= 0 || r.height <= 0) return null;
+  return {
+    x: ((e.clientX - r.left) / r.width) * source.width,
+    y: ((e.clientY - r.top) / r.height) * source.height,
+  };
+}
+
+function setTool(next: Tool) {
+  tool = next;
+  for (const b of toolModes.querySelectorAll('button')) {
+    b.classList.toggle('active', b.dataset.tool === next);
+  }
+  dropzone.classList.toggle('brush-on', next === 'brush');
+  handle.hidden = next === 'brush';
+  stageHint.textContent =
+    next === 'brush'
+      ? '在图上涂抹即可擦除 · [ ] 调半径 · 空格拖动 · ⌘滚轮缩放'
+      : '左键拖动中间的分隔条可以对比原图';
+  if (next === 'brush') {
+    canvasResult.style.clipPath = 'none';
+    imgOriginal.style.clipPath = 'inset(0 0 0 100%)';
+  } else {
+    brushCursor.hidden = true;
+    dropzone.style.cursor = '';
+    setSplit(splitAt);
+  }
 }
 
 function setSplit(p: number) {
@@ -333,7 +414,11 @@ async function acceptFile(file: File | Blob) {
     pixels: imgData.data,
     url,
   };
-  alpha = null;
+  alpha = extractAlpha(imgData.data, bitmap.width, bitmap.height);
+  brush.reset(bitmap.width, bitmap.height);
+  brushMask = brush.mask();
+  liveStroke = null;
+  resetView();
 
   imgOriginal.src = url;
   empty.hidden = true;
@@ -342,10 +427,12 @@ async function acceptFile(file: File | Blob) {
   imgOriginal.style.clipPath = 'none';
   fitFrame();
   setSplit(0.5);
-  btnDownload.disabled = true;
-  btnDownloadMask.disabled = true;
+  btnDownload.disabled = false;
+  btnDownloadMask.disabled = false;
+  syncBrushUi();
+  render();
 
-  await infer(file);
+  void infer(file);
 }
 
 /** WebGPU blows up per-model (shader storage-buffer limits), not per-image. */
@@ -360,13 +447,12 @@ function shortError(err: unknown) {
 }
 
 async function infer(blob: Blob) {
-  busy.hidden = false;
-  busyText.textContent = loadedKey ? '推理中…' : '第一次用这个模型，正在下载权重…';
   const notes: string[] = [];
+  timings.textContent = loadedKey ? '推理中…' : '第一次用这个模型，正在下载权重…';
 
   try {
     await loadModel();
-    busyText.textContent = '推理中…';
+    timings.textContent = '推理中…';
 
     let device = pickDevice();
     let res: Awaited<ReturnType<typeof runModel>>;
@@ -378,7 +464,7 @@ async function infer(blob: Blob) {
       selDevice.value = 'wasm';
       await loadModel(true);
       device = 'wasm';
-      busyText.textContent = '回退 WASM 重跑…';
+      timings.textContent = '回退 WASM 重跑…';
       res = await runModel(blob);
     }
 
@@ -390,7 +476,7 @@ async function infer(blob: Blob) {
       notes.push('遮罩全空/全满 → 已自动回退 fp32 重跑');
       selDtype.value = 'fp32';
       await loadModel(true);
-      busyText.textContent = '回退 fp32 重跑…';
+      timings.textContent = '回退 fp32 重跑…';
       res = await runModel(blob);
       selDtype.value = '__auto';
     }
@@ -402,10 +488,8 @@ async function infer(blob: Blob) {
     const head = `推理 ${res.timings.inferMs} ms · 后处理 ${res.timings.postMs} ms · ${source!.width}×${source!.height}`;
     timings.textContent = notes.length ? `${head}\n${notes.join('\n')}` : head;
   } catch (err: any) {
-    timings.textContent = `出错了：${shortError(err)}`;
+    timings.textContent = `自动抠图未完成（${shortError(err)}）。笔刷仍可用。`;
     console.error(err);
-  } finally {
-    busy.hidden = true;
   }
 }
 
@@ -464,10 +548,13 @@ btnLoad.addEventListener('click', async () => {
 });
 btnRelease.addEventListener('click', () => {
   worker.postMessage({ type: 'dispose' });
-  alpha = null;
-  btnDownload.disabled = true;
-  btnDownloadMask.disabled = true;
-  timings.textContent = '模型已释放';
+  if (source) {
+    alpha = extractAlpha(source.pixels, source.width, source.height);
+    scheduleRender();
+    btnDownload.disabled = false;
+    btnDownloadMask.disabled = false;
+  }
+  timings.textContent = '模型已释放。笔刷仍可用。';
 });
 
 for (const el of [rngThreshold, rngGamma, chkInvert]) {
@@ -526,6 +613,7 @@ const splitFromEvent = (e: PointerEvent | MouseEvent) => {
   setSplit((e.clientX - r.left) / r.width);
 };
 handle.addEventListener('pointerdown', (e) => {
+  if (tool === 'brush') return;
   dragging = true;
   handle.setPointerCapture(e.pointerId);
   e.stopPropagation();
@@ -536,9 +624,179 @@ handle.addEventListener('pointerup', (e) => {
   handle.releasePointerCapture(e.pointerId);
 });
 compare.addEventListener('pointerdown', (e) => {
+  if (tool === 'brush' || spaceDown) return;
   if ((e.target as HTMLElement).closest('.handle')) return;
   splitFromEvent(e);
 });
+
+toolModes.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('button');
+  if (!btn?.dataset.tool) return;
+  setTool(btn.dataset.tool as Tool);
+});
+rngRadius.addEventListener('input', () => {
+  brushRadius = clampRadius(parseFloat(rngRadius.value));
+  syncBrushUi();
+});
+btnUndo.addEventListener('click', () => {
+  if (brush.undo()) refreshBrushMask();
+});
+btnRedo.addEventListener('click', () => {
+  if (brush.redo()) refreshBrushMask();
+});
+
+function placeCursor(e: PointerEvent | MouseEvent) {
+  if (tool !== 'brush' || !source || spaceDown) {
+    brushCursor.hidden = true;
+    return;
+  }
+  const r = canvasResult.getBoundingClientRect();
+  const scale = r.width / source.width;
+  const size = Math.max(6, brushRadius * 2 * scale);
+  brushCursor.hidden = false;
+  brushCursor.style.width = `${size}px`;
+  brushCursor.style.height = `${size}px`;
+  brushCursor.style.left = `${e.clientX}px`;
+  brushCursor.style.top = `${e.clientY}px`;
+}
+
+compare.addEventListener('pointermove', (e) => {
+  if (panning) {
+    view.x += e.clientX - panLast.x;
+    view.y += e.clientY - panLast.y;
+    panLast = { x: e.clientX, y: e.clientY };
+    applyView();
+    return;
+  }
+  if (liveStroke) {
+    const pt = imageFromEvent(e);
+    if (pt) {
+      liveStroke.points.push(pt);
+      refreshBrushMask();
+    }
+  }
+  placeCursor(e);
+});
+compare.addEventListener('pointerdown', (e) => {
+  if (!source) return;
+  if (spaceDown) {
+    panning = true;
+    dropzone.classList.add('is-panning');
+    panLast = { x: e.clientX, y: e.clientY };
+    compare.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    return;
+  }
+  if (tool !== 'brush') return;
+  if (e.button !== 0) return;
+  const pt = imageFromEvent(e);
+  if (!pt) return;
+  liveStroke = { points: [pt], radius: brushRadius };
+  compare.setPointerCapture(e.pointerId);
+  refreshBrushMask();
+  placeCursor(e);
+  e.preventDefault();
+});
+function endPan(e: PointerEvent) {
+  if (!panning) return;
+  panning = false;
+  dropzone.classList.remove('is-panning');
+  try {
+    compare.releasePointerCapture(e.pointerId);
+  } catch {
+    /* already released */
+  }
+}
+
+function endStroke(e: PointerEvent) {
+  if (panning) {
+    endPan(e);
+    return;
+  }
+  if (!liveStroke) return;
+  brush.commit(liveStroke);
+  liveStroke = null;
+  refreshBrushMask();
+  try {
+    compare.releasePointerCapture(e.pointerId);
+  } catch {
+    /* already released */
+  }
+}
+
+compare.addEventListener('pointerup', endStroke);
+compare.addEventListener('pointercancel', endStroke);
+compare.addEventListener('lostpointercapture', (e) => {
+  if (panning) endPan(e);
+  else if (liveStroke) endStroke(e);
+});
+compare.addEventListener('pointerleave', () => {
+  if (!liveStroke) brushCursor.hidden = true;
+});
+
+dropzone.addEventListener(
+  'wheel',
+  (e) => {
+    if (!source) return;
+    if (e.metaKey || e.ctrlKey) {
+      e.preventDefault();
+      const factor = e.deltaY < 0 ? 1.08 : 1 / 1.08;
+      view.zoom = Math.max(0.2, Math.min(8, view.zoom * factor));
+      applyView();
+      return;
+    }
+    if (tool === 'brush') {
+      e.preventDefault();
+      const step = e.deltaY < 0 ? 2 : -2;
+      brushRadius = clampRadius(brushRadius + step);
+      syncBrushUi();
+      placeCursor(e);
+    }
+  },
+  { passive: false },
+);
+
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && !e.repeat) {
+    if (source) e.preventDefault();
+    spaceDown = true;
+    dropzone.classList.add('panning');
+    brushCursor.hidden = true;
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'z') {
+    e.preventDefault();
+    if (e.shiftKey) {
+      if (brush.redo()) refreshBrushMask();
+    } else if (brush.undo()) {
+      refreshBrushMask();
+    }
+    return;
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'y') {
+    e.preventDefault();
+    if (brush.redo()) refreshBrushMask();
+    return;
+  }
+  if (e.key === '[') {
+    e.preventDefault();
+    brushRadius = clampRadius(brushRadius - 2);
+    syncBrushUi();
+  }
+  if (e.key === ']') {
+    e.preventDefault();
+    brushRadius = clampRadius(brushRadius + 2);
+    syncBrushUi();
+  }
+});
+window.addEventListener('keyup', (e) => {
+  if (e.code === 'Space') {
+    spaceDown = false;
+    panning = false;
+    dropzone.classList.remove('panning', 'is-panning');
+  }
+});
+
+setTool('compare');
 
 // downloads
 function download(blob: Blob, name: string) {
