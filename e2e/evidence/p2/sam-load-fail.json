@@ -1,0 +1,32 @@
+{
+  "info": {
+    "promptMode": "sam",
+    "tool": "erase",
+    "lastStrokeSource": "geometry",
+    "lastStrokeNote": "几何（Failed to fetch）",
+    "forceSamWasm": true,
+    "webgpuAdapterOk": false,
+    "view": {
+      "zoom": 1,
+      "x": 0,
+      "y": 0
+    },
+    "samStatus": "unavailable",
+    "encodeCount": 0,
+    "decodeCount": 0,
+    "samReason": "Failed to fetch",
+    "samDevice": null,
+    "strokes": [
+      {
+        "kind": "erase",
+        "source": "geometry"
+      }
+    ]
+  },
+  "painted": {
+    "mean": 23.1318359375,
+    "min": 3,
+    "max": 72,
+    "n": 9216
+  }
+}

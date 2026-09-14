@@ -1,0 +1,19 @@
+{
+  "promptMode": "sam",
+  "tool": "compare",
+  "lastStrokeSource": "geometry",
+  "lastStrokeNote": "—",
+  "forceSamWasm": true,
+  "webgpuAdapterOk": false,
+  "view": {
+    "zoom": 1,
+    "x": 0,
+    "y": 0
+  },
+  "samStatus": "ready",
+  "encodeCount": 1,
+  "decodeCount": 0,
+  "samReason": "",
+  "samDevice": "wasm",
+  "strokes": []
+}
