@@ -71,3 +71,10 @@
   - 回归：`npx playwright test e2e/dev-worker.spec.ts --project=dev` 1 passed / 5.2s。`e2e/evidence/r1/dev-worker.json`：三条 `?worker_file&type=module` URL 均 `msgN=1`、`errN=0`。
   - 修复：worker 入口先 `post(worker-boot)` 再动态 `import()` runtime；`vite.config.ts` 在 import-analysis 之后把 ORT 的 `/@vite/client` 换成内联 `injectQuery`。
 - 阻塞项：本 builder 无 WebGPU，不能复现 operator 那条 `device: webgpu` 的 POST 序列；修好的证据是 wasm/无适配器下的 boot 消息，不是 WebGPU 推理。
+
+## R2-01 · worker.onerror 落到不可用
+
+- 完成层级：SAM + RMBG 都接了 `onerror` / `onmessageerror`；脚本 500 时 UI 不再卡在加载中
+- 工作单元：worker 挂掉必须 reject 全部 pending，状态 `unavailable`，几何笔刷仍可画
+- 证据：`npx playwright test e2e/worker-fail.spec.ts --project=preview` 1 passed / 2.5s。拦截 `sam-worker` 返回 500 后状态 `SAM：不可用 · SAM worker failed to load`，`samStatus=unavailable`，几何笔刷 ROI mean 23。`e2e/evidence/r2/worker-fail.json` + `worker-fail.png`
+- 阻塞项：无

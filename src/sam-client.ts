@@ -45,14 +45,35 @@ export class SamClient {
   private pendingEncode = new Map<number, Pending<SamEncoded>>();
   private pendingDecode = new Map<number, Pending<SamDecoded>>();
   private onChange: () => void;
+  private dead = false;
 
   constructor(onChange: () => void) {
     this.onChange = onChange;
     this.worker.onmessage = (e: MessageEvent<Record<string, unknown>>) => this.onMessage(e.data);
+    this.worker.onerror = (e) => {
+      const detail = [e.message, e.filename].filter(Boolean).join(' ').trim();
+      this.failAll(new Error(detail || 'SAM worker failed to load'));
+    };
+    this.worker.onmessageerror = () => {
+      this.failAll(new Error('SAM worker message deserialize failed'));
+    };
+  }
+
+  private failAll(err: Error) {
+    this.dead = true;
+    this.status = 'unavailable';
+    this.reason = err.message;
+    this.pendingLoad?.reject(err);
+    this.pendingLoad = null;
+    for (const [, p] of this.pendingEncode) p.reject(err);
+    this.pendingEncode.clear();
+    for (const [, p] of this.pendingDecode) p.reject(err);
+    this.pendingDecode.clear();
+    this.onChange();
   }
 
   private failPending(err: Error, where?: string, id?: number) {
-    if (where === 'load' && this.pendingLoad) {
+    if ((where === 'load' || where === 'boot') && this.pendingLoad) {
       this.pendingLoad.reject(err);
       this.pendingLoad = null;
     }
@@ -131,6 +152,10 @@ export class SamClient {
         const err = new Error(String(msg.message ?? 'SAM error'));
         const where = String(msg.where ?? '');
         const id = msg.id as number | undefined;
+        if (where === 'boot') {
+          this.failAll(err);
+          break;
+        }
         if (where === 'load' || where === 'encode') {
           this.status = 'unavailable';
           this.reason = err.message;
@@ -148,7 +173,17 @@ export class SamClient {
     }
   }
 
+  private rejectIfDead(): Error | null {
+    if (!this.dead) return null;
+    this.status = 'unavailable';
+    this.reason ||= 'SAM worker failed to load';
+    this.onChange();
+    return new Error(this.reason);
+  }
+
   load(device: SamDevice, dtype: string): Promise<void> {
+    const dead = this.rejectIfDead();
+    if (dead) return Promise.reject(dead);
     this.status = 'loading';
     this.reason = '正在载入 SlimSAM…';
     this.onChange();
@@ -159,6 +194,8 @@ export class SamClient {
   }
 
   encode(blob: Blob): Promise<SamEncoded> {
+    const dead = this.rejectIfDead();
+    if (dead) return Promise.reject(dead);
     const id = ++this.encodeSeq;
     this.status = 'encoding';
     this.reason = '正在编码图像…';
@@ -170,6 +207,8 @@ export class SamClient {
   }
 
   decode(input_points: number[][][][], input_labels: number[][][]): Promise<SamDecoded> {
+    const dead = this.rejectIfDead();
+    if (dead) return Promise.reject(dead);
     const id = ++this.decodeSeq;
     return new Promise<SamDecoded>((resolve, reject) => {
       this.pendingDecode.set(id, { resolve, reject });

@@ -185,7 +185,25 @@ let pendingLoad: { resolve: () => void; reject: (e: Error) => void } | null = nu
 
 let rmbgBooted = false;
 let rmbgBootAt: number | null = null;
+let rmbgDead = false;
 let probeAlive: { type: string; t?: number } | null = null;
+
+function failRmbg(err: Error) {
+  rmbgDead = true;
+  pendingLoad?.reject(err);
+  pendingLoad = null;
+  for (const [, p] of pendingRuns) p.reject(err);
+  pendingRuns.clear();
+  badgeModel.textContent = '载入失败';
+  badgeModel.className = 'badge warn';
+}
+
+worker.onerror = (e) => {
+  failRmbg(new Error([e.message, e.filename].filter(Boolean).join(' ').trim() || 'RMBG worker failed to load'));
+};
+worker.onmessageerror = () => {
+  failRmbg(new Error('RMBG worker message deserialize failed'));
+};
 
 if (import.meta.env.DEV) {
   const probe = new Worker(new URL('./probe-worker.ts', import.meta.url), { type: 'module' });
@@ -232,7 +250,9 @@ worker.onmessage = (e: MessageEvent<any>) => {
     }
     case 'error': {
       const err = new Error(msg.message);
-      if (msg.where === 'load' && pendingLoad) {
+      if (msg.where === 'boot') {
+        failRmbg(err);
+      } else if (msg.where === 'load' && pendingLoad) {
         pendingLoad.reject(err);
         pendingLoad = null;
       } else if (msg.id != null) {
@@ -289,6 +309,7 @@ function dtypeFor(spec: ModelSpec): Dtype {
 }
 
 function loadModel(force = false): Promise<void> {
+  if (rmbgDead) return Promise.reject(new Error('RMBG worker failed to load'));
   const spec = lastSpec;
   const dtype = dtypeFor(spec);
   const device = pickDevice();
