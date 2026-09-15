@@ -79,7 +79,6 @@ button, select, input { font-family: inherit; }
   appearance: none;
   background: transparent;
   border: 0;
-  border-bottom: 3px solid transparent;
   color: var(--muted);
   font-size: 15px;
   font-weight: 600;
@@ -89,8 +88,7 @@ button, select, input { font-family: inherit; }
 }
 .editor-tabs button:hover { color: var(--ink); }
 .editor-tabs button.active {
-  color: var(--ink);
-  border-bottom-color: var(--primary);
+  color: var(--primary);
 }
 
 .top-actions {
@@ -358,7 +356,7 @@ input[type="range"] { width: 100%; accent-color: var(--primary); }
   font-weight: 700;
   box-shadow: var(--shadow-btn);
 }
-.btn-upload:hover { background: var(--primary-hover); }
+button.btn-upload:hover:not(:disabled) { background: var(--primary-hover); }
 .upload-or { margin: 8px 0 0; color: var(--fg); font-size: 16px; }
 .upload-types { margin: 0; color: var(--muted); font-size: 14px; }
 
