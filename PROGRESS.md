@@ -78,3 +78,10 @@
 - 工作单元：worker 挂掉必须 reject 全部 pending，状态 `unavailable`，几何笔刷仍可画
 - 证据：`npx playwright test e2e/worker-fail.spec.ts --project=preview` 1 passed / 2.5s。拦截 `sam-worker` 返回 500 后状态 `SAM：不可用 · SAM worker failed to load`，`samStatus=unavailable`，几何笔刷 ROI mean 23。`e2e/evidence/r2/worker-fail.json` + `worker-fail.png`
 - 阻塞项：无
+
+## R3-01 · 负点策略写进文档
+
+- 完成层级：`docs/sam-feasibility.md` 独立成节：策略 / 为什么这么选 / 已知局限（全图笔迹负点很弱）
+- 工作单元：文档，无代码行为变化
+- 证据：该文件 `## Negative-point strategy`，对应实现 `src/sam.ts` `strokeToPrompts`
+- 阻塞项：无

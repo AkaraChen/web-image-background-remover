@@ -18,7 +18,29 @@ Main thread never runs encoder/decoder. `src/sam-worker.ts` owns `loadSlimSam` /
 
 **When SAM is used:** WebGPU adapter present, or `?sam=wasm` (test/debug). No adapter and no flag → geometry fallback, no load.
 
-**Negative points:** `strokeToPrompts` labels stroke samples `1`, then up to 3 image-corner points that sit **outside** the stroke bbox (padded by max(16px, 2% of min side)). If the stroke covers every corner, one image-edge midpoint farthest from the bbox center is used. No separate exclude-point tool in this pass; a restore stroke is the user-facing correction.
+## Negative-point strategy
+
+Implemented in `src/sam.ts` `strokeToPrompts`. There is no separate "exclude point" tool in this pass.
+
+**What we send**
+
+1. **Positives (label 1):** samples along the stroke, spacing `SAM_POINT_SPACING` (8px), capped at `SAM_MAX_POINTS` (16).
+2. **Negatives (label 0):** up to **3** of the four image corners (inset 8px), but only those that sit **outside** the stroke axis-aligned bbox padded by `max(16px, 2% of width, 2% of height)`.
+3. **Fallback when every corner is inside that padded bbox:** one image-edge midpoint (top / bottom / left / right, also inset 8px) that is farthest from the bbox center. If even that sits inside (stroke covers the whole image), we still send that farthest edge point — a weak negative is better than none for SlimSAM's multimask head.
+
+**Why this, not a second click or a random background sample**
+
+- The product promise this pass is "paint a stroke, get a region," not "click foreground then background." A second click would be a different interaction (the optional three-candidate picker is explicitly out of scope).
+- Corners are cheap, stable, and almost always background on the photos this tool is for (subject in frame, not a wall-to-wall texture).
+- Capping at 3 keeps the prompt inside SlimSAM's usual point budget together with the 16 positives.
+- Restore-mode geometry strokes remain the user-facing correction when the mask ate something it shouldn't.
+
+**Known limits**
+
+- **Stroke covers the whole image:** every corner is inside the padded bbox, and the edge-midpoint fallback is still on the object. Negatives are then weak or actively wrong; the decoder can return a near-full-image mask. Geometry / restore is the escape hatch.
+- **Subject touching a corner:** that corner is a false negative and can clip the mask. Restore stroke.
+- **Long stroke that is still a thin band:** bbox can swallow three corners even when most of the image is unpainted. The remaining corner (or edge fallback) has to do all the work.
+- Coordinates stay in original image space; the processor maps them onto the 1024 padded square. That mapping is SlimSAM's, not ours.
 
 **Per-stroke SAM mask is stored on the stroke** so undo/replay does not re-decode. That is an exception to P0's "don't snapshot composite masks". Geometry strokes are still re-rasterized.
 
