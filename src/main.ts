@@ -62,6 +62,9 @@ const fileInput = $<HTMLInputElement>('file-input');
 const badgeDevice = $<HTMLSpanElement>('badge-device');
 const badgeModel = $<HTMLSpanElement>('badge-model');
 const editorTabs = $<HTMLElement>('editor-tabs');
+const btnAdvanced = $<HTMLButtonElement>('btn-advanced');
+const advDialog = $<HTMLDialogElement>('adv-dialog');
+const advClose = $<HTMLButtonElement>('adv-close');
 const bgSwatches = $<HTMLDivElement>('bg-swatches');
 const dropOverlay = $<HTMLDivElement>('drop-overlay');
 const btnUpload = $<HTMLButtonElement>('btn-upload');
@@ -448,7 +451,7 @@ function setMode(mode: 'upload' | 'editor') {
 }
 
 function setTab(tab: string) {
-  for (const b of editorTabs.querySelectorAll('button')) {
+  for (const b of editorTabs.querySelectorAll<HTMLButtonElement>('button[data-tab]')) {
     const on = b.dataset.tab === tab;
     b.classList.toggle('active', on);
     b.setAttribute('aria-selected', String(on));
@@ -855,6 +858,13 @@ editorTabs.addEventListener('click', (e) => {
   const btn = (e.target as HTMLElement).closest('button');
   if (!btn?.dataset.tab) return;
   setTab(btn.dataset.tab);
+});
+btnAdvanced.addEventListener('click', () => advDialog.showModal());
+advClose.addEventListener('click', () => advDialog.close());
+// Clicking the backdrop (the dialog element itself) closes the sheet, like every
+// other settings dialog; Escape works natively.
+advDialog.addEventListener('click', (e) => {
+  if (e.target === advDialog) advDialog.close();
 });
 btnUpload.addEventListener('click', (e) => {
   e.stopPropagation();
