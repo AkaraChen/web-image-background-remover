@@ -1,12 +1,12 @@
 {
   "rmbgBooted": true,
-  "rmbgBootAt": 5.200000002980232,
+  "rmbgBootAt": 5.4000000059604645,
   "probeAlive": {
     "type": "probe-alive",
-    "t": 4.4000000059604645
+    "t": 4.800000011920929
   },
   "samBooted": true,
-  "samBootAt": 6,
+  "samBootAt": 5.200000002980232,
   "samStatus": "unloaded",
   "samDevice": null,
   "workers": [

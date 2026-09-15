@@ -785,6 +785,7 @@ selDtype.value = '__auto';
 function syncModelNote() {
   lastSpec = modelById(selModel.value);
   modelNote.textContent = `${lastSpec.note} 授权：${lastSpec.license}`;
+  modelNote.title = modelNote.textContent;
 }
 selModel.value = MODELS[0].id;
 syncModelNote();

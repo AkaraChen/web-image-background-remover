@@ -31,7 +31,7 @@
           <button type="button" role="tab" data-tab="cutout" class="active" aria-selected="true">抠图</button>
           <button type="button" role="tab" data-tab="background" aria-selected="false">背景</button>
           <button type="button" role="tab" data-tab="adjust" aria-selected="false">调整</button>
-          <button type="button" role="tab" data-tab="model" aria-selected="false">模型</button>
+          <button type="button" role="tab" data-tab="model" aria-selected="false">高级</button>
         </nav>
 
         <div class="top-actions">
@@ -119,34 +119,36 @@
         </section>
 
         <section class="panel-row" data-panel="model" hidden>
-          <label class="field">
-            <span>模型</span>
-            <select id="sel-model"></select>
-          </label>
-          <p class="hint" id="model-note"></p>
-          <label class="field">
-            <span>精度</span>
-            <select id="sel-dtype"></select>
-          </label>
-          <label class="field">
-            <span>后端</span>
-            <select id="sel-device">
-              <option value="auto">自动</option>
-              <option value="webgpu">WebGPU</option>
-              <option value="wasm">WASM (CPU)</option>
-            </select>
-          </label>
-          <div class="icon-actions">
-            <button id="btn-load" class="primary compact">载入模型</button>
-            <button id="btn-release" class="ghost">释放</button>
+          <div class="tool-block">
+            <span class="tool-kicker">模型</span>
+            <select id="sel-model" aria-label="识别模型"></select>
+            <p class="hint clamp" id="model-note"></p>
           </div>
-          <div class="progress" id="progress" hidden>
-            <div class="bar"><i id="progress-fill"></i></div>
-            <span class="progress-label" id="progress-label"></span>
+          <div class="tool-block">
+            <span class="tool-kicker">运行方式</span>
+            <div class="field-pair">
+              <select id="sel-device" aria-label="后端" title="推理后端">
+                <option value="auto">自动后端</option>
+                <option value="webgpu">WebGPU</option>
+                <option value="wasm">WASM (CPU)</option>
+              </select>
+              <select id="sel-dtype" aria-label="精度" title="权重精度"></select>
+            </div>
           </div>
-          <div class="badges">
-            <span class="badge" id="badge-device">检测中…</span>
-            <span class="badge" id="badge-model">未载入模型</span>
+          <div class="tool-block">
+            <span class="tool-kicker">会话</span>
+            <div class="icon-actions">
+              <button id="btn-load" class="primary compact">载入模型</button>
+              <button id="btn-release" class="ghost">释放</button>
+            </div>
+            <div class="badges">
+              <span class="badge" id="badge-device">检测中…</span>
+              <span class="badge" id="badge-model">未载入模型</span>
+            </div>
+            <div class="progress" id="progress" hidden>
+              <div class="bar"><i id="progress-fill"></i></div>
+              <span class="progress-label" id="progress-label"></span>
+            </div>
           </div>
         </section>
       </div>

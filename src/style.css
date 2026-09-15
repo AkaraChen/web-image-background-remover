@@ -179,6 +179,9 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   color: var(--muted-2);
 }
 .hint { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
+.hint.clamp { max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.field-pair { display: flex; gap: 8px; }
+.field-pair select { width: auto; min-width: 130px; }
 .hint.center { text-align: center; }
 #model-note {
   max-width: 260px;
