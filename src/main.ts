@@ -61,6 +61,15 @@ const busyText = $<HTMLSpanElement>('busy-text');
 const fileInput = $<HTMLInputElement>('file-input');
 const badgeDevice = $<HTMLSpanElement>('badge-device');
 const badgeModel = $<HTMLSpanElement>('badge-model');
+const editorTabs = $<HTMLElement>('editor-tabs');
+const bgSwatches = $<HTMLDivElement>('bg-swatches');
+const dropOverlay = $<HTMLDivElement>('drop-overlay');
+const btnUpload = $<HTMLButtonElement>('btn-upload');
+const btnNew = $<HTMLButtonElement>('btn-new');
+const btnHome = $<HTMLAnchorElement>('btn-home');
+const btnZoomIn = $<HTMLButtonElement>('btn-zoom-in');
+const btnZoomOut = $<HTMLButtonElement>('btn-zoom-out');
+const btnZoomReset = $<HTMLButtonElement>('btn-zoom-reset');
 
 /* ─────────────────────────── 状态 ─────────────────────────── */
 type BgMode = 'transparent' | 'color' | 'dim';
@@ -426,6 +435,72 @@ function fitFrame() {
 function applyView() {
   frame.style.transformOrigin = 'center center';
   frame.style.transform = `translate(${view.x}px, ${view.y}px) scale(${view.zoom})`;
+  btnZoomReset.textContent = `${Math.round(view.zoom * 100)}%`;
+}
+
+function setMode(mode: 'upload' | 'editor') {
+  document.body.classList.toggle('mode-upload', mode === 'upload');
+  document.body.classList.toggle('mode-editor', mode === 'editor');
+}
+
+function setTab(tab: string) {
+  for (const b of editorTabs.querySelectorAll('button')) {
+    const on = b.dataset.tab === tab;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+  }
+  for (const p of document.querySelectorAll<HTMLElement>('[data-panel]')) {
+    p.hidden = p.dataset.panel !== tab;
+  }
+}
+
+function setBgMode(mode: BgMode) {
+  bgMode = mode;
+  for (const b of bgModes.querySelectorAll('button')) b.classList.toggle('active', b.dataset.mode === mode);
+  colorField.hidden = mode !== 'color';
+  syncSwatches();
+  scheduleRender();
+}
+
+function syncSwatches() {
+  for (const b of bgSwatches.querySelectorAll('button')) {
+    const force = b.dataset.forceMode;
+    const color = (b.dataset.color ?? '').toLowerCase();
+    const on =
+      force === 'transparent'
+        ? bgMode === 'transparent'
+        : bgMode === 'color' && color === inpColor.value.toLowerCase();
+    b.classList.toggle('active', on);
+  }
+}
+
+function setZoom(next: number) {
+  view.zoom = Math.max(0.2, Math.min(8, next));
+  applyView();
+}
+
+function resetToUpload() {
+  if (source) URL.revokeObjectURL(source.url);
+  source = null;
+  sourceBlob = null;
+  alpha = null;
+  liveStroke = null;
+  lastStrokeNote = '—';
+  lastStrokeSource = 'geometry';
+  samImageToken += 1;
+  imgOriginal.removeAttribute('src');
+  empty.hidden = false;
+  compare.hidden = true;
+  checker.style.display = 'none';
+  btnDownload.disabled = true;
+  btnDownloadMask.disabled = true;
+  timings.textContent = '—';
+  setMode('upload');
+  setTab('cutout');
+  setTool('compare');
+  resetView();
+  syncBrushUi();
+  syncSamUi();
 }
 
 function resetView() {
@@ -505,8 +580,8 @@ function setTool(next: Tool) {
   dropzone.classList.toggle('brush-on', isBrush());
   handle.hidden = isBrush();
   stageHint.textContent = isBrush()
-    ? `在图上涂抹即可${tool === 'restore' ? '恢复' : '擦除'} · [ ] 调半径 · 空格拖动 · ⌘滚轮缩放`
-    : '左键拖动中间的分隔条可以对比原图';
+    ? `在主体上涂抹即可${tool === 'restore' ? '恢复' : '擦除'} · [ ] 调半径 · 空格拖动画布`
+    : '拖动分隔条对比原图 · ⌘滚轮缩放 · 空格拖动';
   if (isBrush()) {
     canvasResult.style.clipPath = 'none';
     imgOriginal.style.clipPath = 'inset(0 0 0 100%)';
@@ -638,6 +713,8 @@ async function acceptFile(file: File | Blob) {
   compare.hidden = false;
   checker.style.display = 'block';
   imgOriginal.style.clipPath = 'none';
+  setMode('editor');
+  setTab('cutout');
   fitFrame();
   setSplit(0.5);
   btnDownload.disabled = false;
@@ -663,7 +740,7 @@ function shortError(err: unknown) {
 
 async function infer(blob: Blob) {
   const notes: string[] = [];
-  timings.textContent = loadedKey ? '推理中…' : '第一次用这个模型，正在下载权重…';
+  timings.textContent = loadedKey ? '正在去除背景…' : '正在准备模型…';
 
   try {
     await loadModel();
@@ -782,14 +859,47 @@ for (const el of [rngThreshold, rngGamma, chkInvert]) {
     scheduleRender();
   });
 }
-inpColor.addEventListener('input', scheduleRender);
+inpColor.addEventListener('input', () => {
+  syncSwatches();
+  scheduleRender();
+});
 bgModes.addEventListener('click', (e) => {
   const btn = (e.target as HTMLElement).closest('button');
+  if (!btn?.dataset.mode) return;
+  setBgMode(btn.dataset.mode as BgMode);
+});
+bgSwatches.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('button');
   if (!btn) return;
-  bgMode = btn.dataset.mode as BgMode;
-  for (const b of bgModes.querySelectorAll('button')) b.classList.toggle('active', b === btn);
-  colorField.hidden = bgMode !== 'color';
-  scheduleRender();
+  if (btn.dataset.forceMode === 'transparent') {
+    setBgMode('transparent');
+    return;
+  }
+  if (btn.dataset.color) {
+    inpColor.value = btn.dataset.color;
+    setBgMode('color');
+  }
+});
+editorTabs.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement).closest('button');
+  if (!btn?.dataset.tab) return;
+  setTab(btn.dataset.tab);
+});
+btnUpload.addEventListener('click', (e) => {
+  e.stopPropagation();
+  fileInput.click();
+});
+btnNew.addEventListener('click', resetToUpload);
+btnHome.addEventListener('click', (e) => {
+  e.preventDefault();
+  resetToUpload();
+});
+btnZoomIn.addEventListener('click', () => setZoom(view.zoom * 1.08));
+btnZoomOut.addEventListener('click', () => setZoom(view.zoom / 1.08));
+btnZoomReset.addEventListener('click', () => {
+  view.x = 0;
+  view.y = 0;
+  setZoom(1);
 });
 
 dropzone.addEventListener('click', (e) => {
@@ -814,8 +924,23 @@ fileInput.addEventListener('change', () => {
     dropzone.classList.remove('dragover');
   }),
 );
-dropzone.addEventListener('drop', (e) => {
-  const f = (e as DragEvent).dataTransfer?.files?.[0];
+let dragDepth = 0;
+window.addEventListener('dragenter', (e) => {
+  e.preventDefault();
+  dragDepth += 1;
+  dropOverlay.hidden = false;
+});
+window.addEventListener('dragleave', () => {
+  dragDepth = Math.max(0, dragDepth - 1);
+  if (dragDepth === 0) dropOverlay.hidden = true;
+});
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => {
+  e.preventDefault();
+  dragDepth = 0;
+  dropOverlay.hidden = true;
+  dropzone.classList.remove('dragover');
+  const f = e.dataTransfer?.files?.[0];
   if (f) acceptFile(f);
 });
 window.addEventListener('paste', (e) => {
@@ -1036,6 +1161,9 @@ window.addEventListener('keyup', (e) => {
 
 setTool('compare');
 syncSamUi();
+syncSwatches();
+setMode('upload');
+setTab('cutout');
 
 // downloads
 function download(blob: Blob, name: string) {
