@@ -60,3 +60,14 @@
 - 证据：复用 `src/sam.ts`（`loadSlimSam` / `encodeImage` / `decodePrompt` / `strokeToPrompts`）。`src/sam-worker.ts` 主线程不跑 encoder/decoder。负点 = 笔画 bbox 外的图像角点，见 `docs/sam-feasibility.md`。默认取 `iou_scores` 最高的 1/3 候选。无 WebGPU 不加载 SAM，几何继续画：`e2e/evidence/p2/sam-fallback.json`。`?sam=wasm` 且 Hub abort：`Failed to fetch` 回落几何，`e2e/evidence/p2/sam-load-fail.json`。
 - WASM 管线（`/?sam=wasm`）：encodeCount 图变 1→再画仍为 1→换图 2；decode 每笔 +1；第一笔 IoU 0.960 decode 264 ms，ROI mean 115→25。`e2e/evidence/sam/results.json` `01-first-stroke.png` `02-second-stroke.png`
 - 阻塞项：本 builder `requestAdapter()` 为 null，不能测 WebGPU 每笔 &lt;150 ms，也没有把 WASM 264 ms 写成过闸。未做三选一 UI。
+
+## R1-01 · Vite dev 下 Worker 回消息
+
+- 完成层级：根因定位 + 代码落地 + Playwright 对 `npx vite` 的硬断言通过
+- 工作单元：dev 下 `?worker_file&type=module` worker 必须回消息，encode 仍在 worker 里
+- 证据：
+  - 根因：`e2e/evidence/r1/diagnosis.json`。worker 入口静态 import transformers → onnxruntime-web，Vite import-analysis 给 ORT 塞 `import { injectQuery } from '/@vite/client'`，`onmessage` 要等整图求值完才挂上；HMR client 在 worker 里还会 `location.reload()`。preview 不注入 `/@vite/client`，所以 A/B 只在 `npx vite` 炸。
+  - 判据：零 import 的 `src/probe-worker.ts` 走同一条 `new URL(..., import.meta.url)` Vite 路径，20–25ms 回 `probe-alive` → **脚本有求值**。修好后 app worker 回 `worker-boot`（`e2e/evidence/r1/ab-after-fix.json`，operator 同款 Worker 劫持，MSG>0）。
+  - 回归：`npx playwright test e2e/dev-worker.spec.ts --project=dev` 1 passed / 5.2s。`e2e/evidence/r1/dev-worker.json`：三条 `?worker_file&type=module` URL 均 `msgN=1`、`errN=0`。
+  - 修复：worker 入口先 `post(worker-boot)` 再动态 `import()` runtime；`vite.config.ts` 在 import-analysis 之后把 ORT 的 `/@vite/client` 换成内联 `injectQuery`。
+- 阻塞项：本 builder 无 WebGPU，不能复现 operator 那条 `device: webgpu` 的 POST 序列；修好的证据是 wasm/无适配器下的 boot 消息，不是 WebGPU 推理。

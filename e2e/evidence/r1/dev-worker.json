@@ -1,0 +1,44 @@
+{
+  "rmbgBooted": true,
+  "rmbgBootAt": 41.90000009536743,
+  "probeAlive": {
+    "type": "probe-alive",
+    "t": 20.399999856948853
+  },
+  "samBooted": true,
+  "samBootAt": 35.59999990463257,
+  "samStatus": "unloaded",
+  "samDevice": null,
+  "workers": [
+    {
+      "url": "http://127.0.0.1:5176/src/sam-worker.ts?worker_file&type=module",
+      "type": "module",
+      "postN": 0,
+      "msgN": 1,
+      "errN": 0,
+      "msgTypes": [
+        "worker-boot"
+      ]
+    },
+    {
+      "url": "http://127.0.0.1:5176/src/worker.ts?worker_file&type=module",
+      "type": "module",
+      "postN": 0,
+      "msgN": 1,
+      "errN": 0,
+      "msgTypes": [
+        "worker-boot"
+      ]
+    },
+    {
+      "url": "http://127.0.0.1:5176/src/probe-worker.ts?worker_file&type=module",
+      "type": "module",
+      "postN": 0,
+      "msgN": 1,
+      "errN": 0,
+      "msgTypes": [
+        "probe-alive"
+      ]
+    }
+  ]
+}

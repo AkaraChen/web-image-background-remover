@@ -183,9 +183,25 @@ interface PendingRun {
 const pendingRuns = new Map<number, PendingRun>();
 let pendingLoad: { resolve: () => void; reject: (e: Error) => void } | null = null;
 
+let rmbgBooted = false;
+let rmbgBootAt: number | null = null;
+let probeAlive: { type: string; t?: number } | null = null;
+
+if (import.meta.env.DEV) {
+  const probe = new Worker(new URL('./probe-worker.ts', import.meta.url), { type: 'module' });
+  probe.onmessage = (e: MessageEvent<{ type: string; t?: number }>) => {
+    probeAlive = e.data;
+    probe.terminate();
+  };
+}
+
 worker.onmessage = (e: MessageEvent<any>) => {
   const msg = e.data;
   switch (msg.type) {
+    case 'worker-boot':
+      rmbgBooted = true;
+      rmbgBootAt = typeof msg.t === 'number' ? msg.t : performance.now();
+      break;
     case 'progress': {
       const { status, file, loaded, total } = msg;
       progress.hidden = false;
@@ -1058,6 +1074,15 @@ initDeviceBadge();
   },
   get webgpuAdapterOk() {
     return webgpuAdapterOk;
+  },
+  get rmbgBooted() {
+    return rmbgBooted;
+  },
+  get rmbgBootAt() {
+    return rmbgBootAt;
+  },
+  get probeAlive() {
+    return probeAlive;
   },
   get effectiveAlpha() {
     return effectiveAlpha;

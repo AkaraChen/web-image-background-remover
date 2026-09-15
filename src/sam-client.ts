@@ -35,6 +35,9 @@ export class SamClient {
   lastEncodeMs: number | null = null;
   lastDecodeMs: number | null = null;
   encodedSize: { width: number; height: number } | null = null;
+  /** True after the worker evaluated far enough to post `worker-boot`. */
+  booted = false;
+  bootAt: number | null = null;
 
   private encodeSeq = 0;
   private decodeSeq = 0;
@@ -65,6 +68,11 @@ export class SamClient {
 
   private onMessage(msg: Record<string, unknown>) {
     switch (msg.type) {
+      case 'worker-boot':
+        this.booted = true;
+        this.bootAt = typeof msg.t === 'number' ? msg.t : performance.now();
+        this.onChange();
+        break;
       case 'sam-progress': {
         const file = String(msg.file ?? '');
         const status = String(msg.status ?? '');
