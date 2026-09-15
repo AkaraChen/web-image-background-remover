@@ -194,6 +194,12 @@ button:focus-visible, select:focus-visible, input:focus-visible {
 }
 .hint { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
 .hint.center { text-align: center; }
+#model-note {
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
 .field > span { font-weight: 600; }
