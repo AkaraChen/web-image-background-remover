@@ -3,139 +3,175 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>抠图台 · 浏览器本地去背景</title>
+    <title>抠图台</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Poppins:wght@700&display=swap"
+      rel="stylesheet"
+    />
   </head>
-  <body>
+  <body class="mode-upload">
     <div class="app">
       <header class="topbar">
-        <div class="brand">
-          <span class="dot"></span>
-          <h1>抠图台</h1>
-          <span class="sub">模型跑在你自己的显卡上，图片不出本机</span>
-        </div>
-        <div class="badges">
-          <span class="badge" id="badge-device">检测中…</span>
-          <span class="badge" id="badge-model">未载入模型</span>
+        <a class="brand" href="/" id="btn-home" aria-label="回到上传">
+          <span class="logo" aria-hidden="true">
+            <svg viewBox="0 0 32 32" width="28" height="28">
+              <circle cx="16" cy="16" r="16" fill="#0F70E6" />
+              <path
+                fill="#fff"
+                d="M16.2 8.4c1.7 0 3 1.3 3 3s-1.3 3-3 3-3-1.3-3-3 1.3-3 3-3Zm-5.3 8.2c.4-1.2 2.2-2 5.3-2s4.9.8 5.3 2l1.5 5.2c.2.6-.2 1.2-.8 1.2h-2.1l-.5 1.8c-.1.5-.6.8-1.1.6l-2.3-.8-2.3.8c-.5.2-1-.1-1.1-.6l-.5-1.8H9.2c-.6 0-1-.6-.8-1.2l1.5-5.2Z"
+              />
+            </svg>
+          </span>
+          <span class="wordmark">抠图台</span>
+        </a>
+
+        <nav class="editor-tabs editor-only" id="editor-tabs" role="tablist" aria-label="编辑工具">
+          <button type="button" role="tab" data-tab="cutout" class="active" aria-selected="true">抠图</button>
+          <button type="button" role="tab" data-tab="background" aria-selected="false">背景</button>
+          <button type="button" role="tab" data-tab="adjust" aria-selected="false">调整</button>
+          <button type="button" role="tab" data-tab="model" aria-selected="false">模型</button>
+        </nav>
+
+        <div class="top-actions">
+          <button type="button" id="btn-new" class="ghost editor-only">新图片</button>
+          <div class="header-download editor-only">
+            <button id="btn-download-mask" class="ghost" disabled data-testid="btn-download-mask">下载遮罩</button>
+            <button id="btn-download" class="primary pill" disabled data-testid="btn-download">下载</button>
+          </div>
         </div>
       </header>
 
-      <main class="layout">
-        <!-- ─────────── 设置面板 ─────────── -->
-        <aside class="panel">
-          <section class="group">
-            <label class="field">
-              <span>模型</span>
-              <select id="sel-model"></select>
-            </label>
-            <p class="hint" id="model-note"></p>
-            <div class="row">
-              <label class="field">
-                <span>精度</span>
-                <select id="sel-dtype"></select>
-              </label>
-              <label class="field">
-                <span>后端</span>
-                <select id="sel-device">
-                  <option value="auto">自动</option>
-                  <option value="webgpu">WebGPU</option>
-                  <option value="wasm">WASM (CPU)</option>
-                </select>
-              </label>
-            </div>
-            <div class="actions">
-              <button id="btn-load" class="primary">载入模型</button>
-              <button id="btn-release" class="ghost">释放</button>
-            </div>
-            <div class="progress" id="progress" hidden>
-              <div class="bar"><i id="progress-fill"></i></div>
-              <span class="progress-label" id="progress-label"></span>
-            </div>
-          </section>
-
-          <hr />
-
-          <section class="group">
-            <h2>边缘</h2>
-            <label class="slider">
-              <span>阈值 <b id="val-threshold">0.50</b></span>
-              <input id="rng-threshold" type="range" min="0" max="0.95" step="0.01" value="0.5" />
-            </label>
-            <label class="slider">
-              <span>羽化 <b id="val-gamma">1.00</b></span>
-              <input id="rng-gamma" type="range" min="0.2" max="3" step="0.05" value="1" />
-            </label>
-            <label class="check">
-              <input id="chk-invert" type="checkbox" />
-              <span>反相遮罩（前景背景反了就勾这个）</span>
-            </label>
-          </section>
-
-          <hr />
-
-          <section class="group">
-            <h2>背景</h2>
-            <div class="segmented" id="bg-modes">
-              <button data-mode="transparent" class="active">透明</button>
-              <button data-mode="color">纯色</button>
-              <button data-mode="dim">留原图变暗</button>
-            </div>
-            <label class="field color-field" id="color-field" hidden>
-              <span>颜色</span>
-              <input id="inp-color" type="color" value="#2f6bff" />
-            </label>
-          </section>
-
-          <hr />
-
-          <section class="group">
-            <h2>笔刷</h2>
+      <div class="toolstrip editor-only" id="toolstrip">
+        <section class="panel-row" data-panel="cutout">
+          <div class="tool-block">
+            <span class="tool-kicker">Magic Brush</span>
             <div class="segmented" id="tool-modes">
               <button type="button" data-tool="compare" class="active" data-testid="tool-compare">对比</button>
               <button type="button" data-tool="erase" data-testid="tool-brush">擦除</button>
               <button type="button" data-tool="restore" data-testid="tool-restore">恢复</button>
             </div>
+          </div>
+          <div class="tool-block">
+            <span class="tool-kicker">识别</span>
             <div class="segmented" id="prompt-modes">
               <button type="button" data-prompt="geometry" class="active" data-testid="prompt-geometry">几何</button>
               <button type="button" data-prompt="sam" data-testid="prompt-sam">智能</button>
             </div>
+          </div>
+          <label class="slider inline">
+            <span>画笔大小 <b id="val-radius" data-testid="val-radius">24</b></span>
+            <input id="rng-radius" data-testid="rng-radius" type="range" min="4" max="160" step="1" value="24" />
+          </label>
+          <div class="icon-actions">
+            <button type="button" id="btn-undo" data-testid="btn-undo" disabled title="撤销">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M12.5 8c-2.4 0-4.5 1-6 2.6L4 8v8h8l-2.6-2.5A6.5 6.5 0 1 1 12.5 21H11v-2h1.5a4.5 4.5 0 1 0 0-11Z"
+                />
+              </svg>
+              撤销
+            </button>
+            <button type="button" id="btn-redo" data-testid="btn-redo" disabled title="重做">
+              <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="M11.5 8c2.4 0 4.5 1 6 2.6L20 8v8h-8l2.6-2.5A6.5 6.5 0 1 0 11.5 21H13v-2h-1.5a4.5 4.5 0 1 1 0-11Z"
+                />
+              </svg>
+              重做
+            </button>
+          </div>
+          <div class="tool-meta">
             <p class="hint" id="sam-status" data-testid="sam-status">SAM：未加载</p>
             <p class="hint" id="stroke-source" data-testid="stroke-source">上一笔：—</p>
-            <label class="slider">
-              <span>半径 <b id="val-radius" data-testid="val-radius">24</b></span>
-              <input id="rng-radius" data-testid="rng-radius" type="range" min="4" max="160" step="1" value="24" />
-            </label>
-            <div class="actions">
-              <button type="button" id="btn-undo" data-testid="btn-undo" disabled>撤销</button>
-              <button type="button" id="btn-redo" data-testid="btn-redo" disabled>重做</button>
+          </div>
+        </section>
+
+        <section class="panel-row" data-panel="background" hidden>
+          <div class="tool-block">
+            <span class="tool-kicker">背景</span>
+            <div class="segmented" id="bg-modes">
+              <button data-mode="transparent" class="active">透明</button>
+              <button data-mode="color">纯色</button>
+              <button data-mode="dim">原图变暗</button>
             </div>
-            <p class="hint">[ ] 或滚轮调大小 · ⌘Z 撤销 · ⇧⌘Z 重做 · 空格拖动 · ⌘滚轮缩放。不跑模型也能用。</p>
-          </section>
+          </div>
+          <div class="swatches" id="bg-swatches">
+            <button type="button" class="swatch checker-swatch" data-color="#ffffff" data-force-mode="transparent" title="透明"></button>
+            <button type="button" class="swatch" data-color="#ffffff" title="白" style="background: #fff"></button>
+            <button type="button" class="swatch" data-color="#000000" title="黑" style="background: #111"></button>
+            <button type="button" class="swatch" data-color="#0F70E6" title="蓝" style="background: #0f70e6"></button>
+            <button type="button" class="swatch" data-color="#ffc83e" title="黄" style="background: #ffc83e"></button>
+            <button type="button" class="swatch" data-color="#e9ebec" title="浅灰" style="background: #e9ebec"></button>
+            <button type="button" class="swatch" data-color="#db1436" title="红" style="background: #db1436"></button>
+          </div>
+          <label class="field color-field" id="color-field" hidden>
+            <span>自定义</span>
+            <input id="inp-color" type="color" value="#0F70E6" />
+          </label>
+        </section>
 
-          <hr />
+        <section class="panel-row" data-panel="adjust" hidden>
+          <label class="slider inline">
+            <span>阈值 <b id="val-threshold">0.50</b></span>
+            <input id="rng-threshold" type="range" min="0" max="0.95" step="0.01" value="0.5" />
+          </label>
+          <label class="slider inline">
+            <span>羽化 <b id="val-gamma">1.00</b></span>
+            <input id="rng-gamma" type="range" min="0.2" max="3" step="0.05" value="1" />
+          </label>
+          <label class="check">
+            <input id="chk-invert" type="checkbox" />
+            <span>反相遮罩</span>
+          </label>
+        </section>
 
-          <section class="group">
-            <h2>输出</h2>
-            <div class="actions">
-              <button id="btn-download" class="primary" disabled data-testid="btn-download">下载 PNG</button>
-              <button id="btn-download-mask" class="ghost" disabled data-testid="btn-download-mask">下载遮罩</button>
-            </div>
-            <p class="hint" id="timings">—</p>
-          </section>
-        </aside>
+        <section class="panel-row" data-panel="model" hidden>
+          <label class="field">
+            <span>模型</span>
+            <select id="sel-model"></select>
+          </label>
+          <p class="hint" id="model-note"></p>
+          <label class="field">
+            <span>精度</span>
+            <select id="sel-dtype"></select>
+          </label>
+          <label class="field">
+            <span>后端</span>
+            <select id="sel-device">
+              <option value="auto">自动</option>
+              <option value="webgpu">WebGPU</option>
+              <option value="wasm">WASM (CPU)</option>
+            </select>
+          </label>
+          <div class="icon-actions">
+            <button id="btn-load" class="primary compact">载入模型</button>
+            <button id="btn-release" class="ghost">释放</button>
+          </div>
+          <div class="progress" id="progress" hidden>
+            <div class="bar"><i id="progress-fill"></i></div>
+            <span class="progress-label" id="progress-label"></span>
+          </div>
+          <div class="badges">
+            <span class="badge" id="badge-device">检测中…</span>
+            <span class="badge" id="badge-model">未载入模型</span>
+          </div>
+        </section>
+      </div>
 
-        <!-- ─────────── 画布区 ─────────── -->
+      <main class="workspace">
         <section class="stage">
           <div class="dropzone" id="dropzone" data-testid="dropzone">
             <input id="file-input" data-testid="file-input" type="file" accept="image/*" hidden />
             <div class="empty" id="empty">
-              <svg viewBox="0 0 24 24" width="42" height="42" aria-hidden="true">
-                <path
-                  fill="currentColor"
-                  d="M12 16.5 6.75 11.25l1.4-1.4 2.85 2.8V4h2v8.65l2.85-2.8 1.4 1.4L12 16.5ZM5 20a2 2 0 0 1-2-2v-3h2v3h14v-3h2v3a2 2 0 0 1-2 2H5Z"
-                />
-              </svg>
-              <p class="big">把图片拖进来</p>
-              <p class="small">也可以 ⌘V 粘贴，或点击选择文件 · PNG / JPEG / WebP</p>
+              <div class="upload-card">
+                <button type="button" class="btn-upload" id="btn-upload">上传图片</button>
+                <p class="upload-or">或拖入文件，粘贴图片</p>
+                <p class="upload-types">PNG / JPEG / WebP</p>
+              </div>
             </div>
 
             <div class="compare" id="compare" data-testid="compare" hidden>
@@ -149,9 +185,24 @@
             <div class="busy" id="busy" hidden><span class="spinner"></span><span id="busy-text">推理中…</span></div>
             <div id="brush-cursor" class="brush-cursor" hidden></div>
           </div>
-          <p class="hint center" id="stage-hint">左键拖动中间的分隔条可以对比原图</p>
+
+          <div class="stage-footer editor-only">
+            <div class="zoom-dock">
+              <button type="button" id="btn-zoom-out" title="缩小">−</button>
+              <button type="button" id="btn-zoom-reset" title="100%">100%</button>
+              <button type="button" id="btn-zoom-in" title="放大">+</button>
+            </div>
+            <p class="hint center" id="stage-hint">拖动分隔条对比原图</p>
+            <p class="hint timings" id="timings">—</p>
+          </div>
         </section>
       </main>
+    </div>
+    <div id="drop-overlay" class="drop-overlay" hidden>
+      <div class="drop-overlay-card">
+        <p>将图片拖到这里</p>
+        <span>一次一张</span>
+      </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
