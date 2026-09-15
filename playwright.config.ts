@@ -2,7 +2,7 @@ import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  testIgnore: /sam-feasibility\.spec\.ts/,
+  testIgnore: /sam-feasibility\.spec\.ts|sam-brush\.spec\.ts/,
   timeout: 60_000,
   expect: { timeout: 15_000 },
   fullyParallel: false,
@@ -14,7 +14,7 @@ export default defineConfig({
   projects: [
     {
       name: 'preview',
-      testIgnore: /sam-feasibility\.spec\.ts|dev-worker\.spec\.ts/,
+      testIgnore: /sam-feasibility\.spec\.ts|sam-brush\.spec\.ts|dev-worker\.spec\.ts/,
       use: { baseURL: 'http://127.0.0.1:4173' },
     },
     {

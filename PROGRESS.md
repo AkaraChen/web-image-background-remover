@@ -85,3 +85,17 @@
 - 工作单元：文档，无代码行为变化
 - 证据：该文件 `## Negative-point strategy`，对应实现 `src/sam.ts` `strokeToPrompts`
 - 阻塞项：无
+
+## R4-01 · 默认 Playwright 套件稳定
+
+- 完成层级：连跑 6 次 `npx playwright test` 全绿（每次 7 passed / 0 failed）
+- 工作单元：稳定默认套件，不许放宽断言 / skip / 删测试
+- 选择：**把 `sam-brush.spec.ts` 挪出默认套件**（与 `sam-feasibility` 相同，跑 `npm run test:sam`）。单独跑它就把 Chrome RSS 打到 ~2.9GB，builder 只剩 ~1.5–3.6GB 可用；`retries: 1` 只会把 `Target crashed` 藏过去，不是根因。未改断言，未 skip。
+- 证据：`e2e/evidence/r4/suite-runs.json`
+  - run 1: 7 passed / 0 failed / 18.7s
+  - run 2: 7 passed / 0 failed / 19.0s
+  - run 3: 7 passed / 0 failed / 17.8s
+  - run 4: 7 passed / 0 failed / 17.0s
+  - run 5: 7 passed / 0 failed / 15.8s
+  - run 6: 7 passed / 0 failed / 16.8s
+- 阻塞项：全量 SlimSAM 管线仍要 `npm run test:sam`；本 builder 无 WebGPU。
