@@ -35,14 +35,10 @@
         </nav>
 
         <div class="top-actions">
-          <div class="badges">
-            <span class="badge" id="badge-device">检测中…</span>
-            <span class="badge" id="badge-model">未载入模型</span>
-          </div>
           <button type="button" id="btn-new" class="ghost editor-only">新图片</button>
           <div class="header-download editor-only">
             <button id="btn-download-mask" class="ghost" disabled data-testid="btn-download-mask">下载遮罩</button>
-            <button id="btn-download" class="primary" disabled data-testid="btn-download">下载</button>
+            <button id="btn-download" class="primary pill" disabled data-testid="btn-download">下载</button>
           </div>
         </div>
       </header>
@@ -159,6 +155,10 @@
             <div class="bar"><i id="progress-fill"></i></div>
             <span class="progress-label" id="progress-label"></span>
           </div>
+          <div class="badges">
+            <span class="badge" id="badge-device">检测中…</span>
+            <span class="badge" id="badge-model">未载入模型</span>
+          </div>
         </section>
       </div>
 
@@ -168,16 +168,8 @@
             <input id="file-input" data-testid="file-input" type="file" accept="image/*" hidden />
             <div class="empty" id="empty">
               <div class="upload-card">
-                <button type="button" class="btn-upload" id="btn-upload">
-                  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-                    <path
-                      fill="currentColor"
-                      d="M11 16V7.8l-2.6 2.6-1.4-1.4L12 4l5 4.999-1.4 1.4L13 7.8V16h-2Zm-6 4a2 2 0 0 1-2-2v-3h2v3h14v-3h2v3a2 2 0 0 1-2 2H5Z"
-                    />
-                  </svg>
-                  上传图片
-                </button>
-                <p class="upload-or">或拖入文件、粘贴图片</p>
+                <button type="button" class="btn-upload" id="btn-upload">上传图片</button>
+                <p class="upload-or">或拖入文件，粘贴图片</p>
                 <p class="upload-types">PNG / JPEG / WebP</p>
               </div>
             </div>

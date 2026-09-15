@@ -423,10 +423,10 @@ function render() {
 /* ─────────────────────────── 对比框尺寸 ─────────────────────────── */
 function fitFrame() {
   if (!source) return;
-  const pad = 40;
-  const cw = dropzone.clientWidth - pad;
-  const ch = dropzone.clientHeight - pad;
-  const scale = Math.min(cw / source.width, ch / source.height, 1);
+  const pad = 48;
+  const cw = Math.max(1, dropzone.clientWidth - pad);
+  const ch = Math.max(1, dropzone.clientHeight - pad);
+  const scale = Math.min(cw / source.width, ch / source.height);
   frame.style.width = `${Math.round(source.width * scale)}px`;
   frame.style.height = `${Math.round(source.height * scale)}px`;
   applyView();
@@ -550,8 +550,10 @@ function syncSamUi() {
     cls = 'bad';
   }
   samStatusEl.textContent = text;
+  samStatusEl.title = text;
   samStatusEl.className = `hint ${cls}`.trim();
   strokeSourceEl.textContent = `上一笔：${lastStrokeNote}`;
+  strokeSourceEl.title = lastStrokeNote;
   for (const b of promptModes.querySelectorAll('button')) {
     b.classList.toggle('active', b.dataset.prompt === promptMode);
   }
