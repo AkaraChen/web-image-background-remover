@@ -1,3 +1,7 @@
+if (import.meta.env.DEV) {
+  import("react-grab");
+}
+
 import './style.css';
 import { MODELS, DTYPES, modelById, type Dtype, type ModelSpec } from './models';
 import {
