@@ -58,9 +58,8 @@ function outsideBox(p: Pt, minX: number, minY: number, maxX: number, maxY: numbe
  * Positives: evenly spaced along the stroke, capped at `maxPts`.
  * Negatives: image-corner reference points that lie outside the stroke bbox
  * (padded). If the stroke covers every corner, one edge midpoint farthest
- * from the bbox center is used. Users who need more control can switch to
- * geometry mode or paint a restore stroke; there is no separate "exclude"
- * tool in this pass.
+ * from the bbox center is used. There is no separate "exclude" tool; a
+ * restore stroke is the way to take pixels back.
  */
 export function strokeToPrompts(
   points: Pt[],

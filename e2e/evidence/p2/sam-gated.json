@@ -1,18 +1,19 @@
 {
+  "status": "SAM：不可用 · 无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），画笔已禁用。",
   "info": {
     "tool": "compare",
     "lastStrokeNote": "—",
-    "forceSamWasm": true,
+    "forceSamWasm": false,
     "webgpuAdapterOk": false,
     "view": {
       "zoom": 1,
       "x": 0,
       "y": 0
     },
-    "samStatus": "unavailable",
+    "samStatus": "unloaded",
     "encodeCount": 0,
     "decodeCount": 0,
-    "samReason": "Failed to fetch",
+    "samReason": "",
     "samDevice": null,
     "strokes": []
   }

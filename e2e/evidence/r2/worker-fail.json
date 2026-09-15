@@ -1,10 +1,8 @@
 {
   "status": "SAM：不可用 · SAM worker failed to load",
   "info": {
-    "promptMode": "sam",
-    "tool": "erase",
-    "lastStrokeSource": "geometry",
-    "lastStrokeNote": "几何（SAM worker failed to load）",
+    "tool": "compare",
+    "lastStrokeNote": "—",
     "forceSamWasm": true,
     "webgpuAdapterOk": false,
     "view": {
@@ -17,17 +15,6 @@
     "decodeCount": 0,
     "samReason": "SAM worker failed to load",
     "samDevice": null,
-    "strokes": [
-      {
-        "kind": "erase",
-        "source": "geometry"
-      }
-    ]
-  },
-  "painted": {
-    "mean": 23.1318359375,
-    "min": 3,
-    "max": 72,
-    "n": 9216
+    "strokes": []
   }
 }

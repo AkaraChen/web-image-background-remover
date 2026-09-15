@@ -70,7 +70,6 @@ export async function dragFrac(
     await page.mouse.move(sx + ((ex - sx) * i) / steps, sy + ((ey - sy) * i) / steps);
   }
   await page.mouse.up();
-  await expect(page.getByTestId('btn-undo')).toBeEnabled();
 }
 
 export async function abortHub(page: Page) {
@@ -89,9 +88,7 @@ export async function debug(page: Page) {
       device: string | null;
     };
     return {
-      promptMode: c.promptMode,
       tool: c.tool,
-      lastStrokeSource: c.lastStrokeSource,
       lastStrokeNote: c.lastStrokeNote,
       forceSamWasm: c.forceSamWasm,
       webgpuAdapterOk: c.webgpuAdapterOk,
@@ -101,9 +98,9 @@ export async function debug(page: Page) {
       decodeCount: sam.decodeCount,
       samReason: sam.reason,
       samDevice: sam.device,
-      strokes: (c.brush as { stack: { strokes: { kind: string; source: string }[] } }).stack.strokes.map((s) => ({
+      strokes: (c.brush as { stack: { strokes: { kind: string; samMask: Uint8Array }[] } }).stack.strokes.map((s) => ({
         kind: s.kind,
-        source: s.source,
+        hasMask: !!s.samMask && s.samMask.length > 0,
       })),
     };
   });

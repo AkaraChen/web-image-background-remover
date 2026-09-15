@@ -1,7 +1,5 @@
 {
-  "promptMode": "sam",
   "tool": "compare",
-  "lastStrokeSource": "geometry",
   "lastStrokeNote": "—",
   "forceSamWasm": true,
   "webgpuAdapterOk": false,

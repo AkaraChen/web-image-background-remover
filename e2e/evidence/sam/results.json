@@ -2,9 +2,7 @@
   "note": "WASM pipeline correctness only. Per-stroke <150 ms is missing proof on this builder (no WebGPU adapter).",
   "webgpuRuntime": "missing proof",
   "afterEncode": {
-    "promptMode": "sam",
     "tool": "compare",
-    "lastStrokeSource": "geometry",
     "lastStrokeNote": "—",
     "forceSamWasm": true,
     "webgpuAdapterOk": false,
@@ -21,10 +19,8 @@
     "strokes": []
   },
   "afterFirst": {
-    "promptMode": "sam",
     "tool": "erase",
-    "lastStrokeSource": "sam",
-    "lastStrokeNote": "智能 · 候选 1/3 · IoU 0.960 · decode 264 ms",
+    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.960 · decode 146 ms",
     "forceSamWasm": true,
     "webgpuAdapterOk": false,
     "view": {
@@ -40,27 +36,25 @@
     "strokes": [
       {
         "kind": "erase",
-        "source": "sam"
+        "hasMask": true
       }
     ]
   },
-  "firstRoi": {
-    "mean": 24.611979166666668,
-    "min": 0,
-    "max": 253,
+  "before": {
+    "mean": 255,
+    "min": 255,
+    "max": 255,
     "n": 24576
   },
-  "before": {
-    "mean": 115.17447916666667,
+  "firstRoi": {
+    "mean": 43.1121826171875,
     "min": 0,
-    "max": 253,
+    "max": 255,
     "n": 24576
   },
   "afterSecond": {
-    "promptMode": "sam",
-    "tool": "erase",
-    "lastStrokeSource": "sam",
-    "lastStrokeNote": "智能 · 候选 1/3 · IoU 0.952 · decode 261 ms",
+    "tool": "restore",
+    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.952 · decode 116 ms",
     "forceSamWasm": true,
     "webgpuAdapterOk": false,
     "view": {
@@ -76,18 +70,70 @@
     "strokes": [
       {
         "kind": "erase",
-        "source": "sam"
+        "hasMask": true
       },
       {
+        "kind": "restore",
+        "hasMask": true
+      }
+    ]
+  },
+  "secondRoi": {
+    "mean": 91.84495192307692,
+    "min": 0,
+    "max": 255,
+    "n": 4992
+  },
+  "afterUndo": {
+    "tool": "restore",
+    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.952 · decode 116 ms",
+    "forceSamWasm": true,
+    "webgpuAdapterOk": false,
+    "view": {
+      "zoom": 1,
+      "x": 0,
+      "y": 0
+    },
+    "samStatus": "ready",
+    "encodeCount": 1,
+    "decodeCount": 2,
+    "samReason": "",
+    "samDevice": "wasm",
+    "strokes": [
+      {
         "kind": "erase",
-        "source": "sam"
+        "hasMask": true
+      }
+    ]
+  },
+  "afterRedo": {
+    "tool": "restore",
+    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.952 · decode 116 ms",
+    "forceSamWasm": true,
+    "webgpuAdapterOk": false,
+    "view": {
+      "zoom": 1,
+      "x": 0,
+      "y": 0
+    },
+    "samStatus": "ready",
+    "encodeCount": 1,
+    "decodeCount": 2,
+    "samReason": "",
+    "samDevice": "wasm",
+    "strokes": [
+      {
+        "kind": "erase",
+        "hasMask": true
+      },
+      {
+        "kind": "restore",
+        "hasMask": true
       }
     ]
   },
   "afterReloaded": {
-    "promptMode": "sam",
-    "tool": "erase",
-    "lastStrokeSource": "geometry",
+    "tool": "compare",
     "lastStrokeNote": "—",
     "forceSamWasm": true,
     "webgpuAdapterOk": false,

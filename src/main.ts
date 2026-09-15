@@ -10,7 +10,6 @@ import {
   createStroke,
   extractAlpha,
   type Pt,
-  type Stroke,
   type StrokeKind,
 } from './brush';
 import { strokeToPrompts, type SamDevice } from './sam';
@@ -42,7 +41,6 @@ const btnDownload = $<HTMLButtonElement>('btn-download');
 const btnDownloadMask = $<HTMLButtonElement>('btn-download-mask');
 const timings = $<HTMLParagraphElement>('timings');
 const toolModes = $<HTMLDivElement>('tool-modes');
-const promptModes = $<HTMLDivElement>('prompt-modes');
 const samStatusEl = $<HTMLParagraphElement>('sam-status');
 const strokeSourceEl = $<HTMLParagraphElement>('stroke-source');
 const rngRadius = $<HTMLInputElement>('rng-radius');
@@ -78,7 +76,13 @@ const btnZoomReset = $<HTMLButtonElement>('btn-zoom-reset');
 /* ─────────────────────────── 状态 ─────────────────────────── */
 type BgMode = 'transparent' | 'color' | 'dim';
 type Tool = 'compare' | 'erase' | 'restore';
-type PromptMode = 'geometry' | 'sam';
+
+/** A stroke being dragged; it only becomes a Stroke once SAM decodes it. */
+interface PendingStroke {
+  points: Pt[];
+  radius: number;
+  kind: StrokeKind;
+}
 
 interface Source {
   bitmap: ImageBitmap;
@@ -105,11 +109,9 @@ let lastSpec: ModelSpec = MODELS[0];
 let webgpuAdapterOk = false;
 
 let tool: Tool = 'compare';
-let promptMode: PromptMode = 'geometry';
 let brushRadius = 24;
 const brush = new BrushEngine();
-let liveStroke: Stroke | null = null;
-let lastStrokeSource: 'geometry' | 'sam' = 'geometry';
+let liveStroke: PendingStroke | null = null;
 let lastStrokeNote = '—';
 let view = { zoom: 1, x: 0, y: 0 };
 let spaceDown = false;
@@ -176,7 +178,7 @@ async function initDeviceBadge() {
 function samBlockReason(): string | null {
   if (forceSamWasm) return null;
   if (!webgpuAdapterOk) {
-    return '无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），已回落几何。';
+    return '无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），画笔已禁用。';
   }
   return null;
 }
@@ -387,7 +389,7 @@ function render() {
   const m = alpha;
 
   fillBaseAlpha(w, h, m);
-  effectiveAlpha = brush.apply(baseAlpha, liveStroke);
+  effectiveAlpha = brush.apply(baseAlpha);
 
   let r = 0, g = 0, b = 0;
   if (bgMode === 'color') {
@@ -490,7 +492,6 @@ function resetToUpload() {
   alpha = null;
   liveStroke = null;
   lastStrokeNote = '—';
-  lastStrokeSource = 'geometry';
   samImageToken += 1;
   imgOriginal.removeAttribute('src');
   empty.hidden = false;
@@ -523,26 +524,16 @@ function syncSamUi() {
   const blocked = samBlockReason();
   let text: string;
   let cls = '';
-  if (promptMode !== 'sam') {
-    text = blocked
-      ? `SAM：未加载 · ${blocked}`
-      : sam.status === 'ready'
-        ? 'SAM：就绪（当前用几何）'
-        : sam.status === 'loading' || sam.status === 'encoding'
-          ? `SAM：${sam.status === 'encoding' ? '编码中' : '加载中'}（当前用几何，可继续画）`
-          : sam.status === 'unavailable'
-            ? `SAM：不可用 · ${sam.reason}`
-            : 'SAM：未加载';
-  } else if (blocked) {
+  if (blocked) {
     text = `SAM：不可用 · ${blocked}`;
     cls = 'bad';
   } else if (sam.status === 'unloaded') {
-    text = 'SAM：未加载';
+    text = 'SAM：未加载（载入图片后自动加载）';
   } else if (sam.status === 'loading') {
-    text = `SAM：加载中${sam.reason ? ` · ${sam.reason}` : ''}（几何先顶着）`;
+    text = `SAM：加载中${sam.reason ? ` · ${sam.reason}` : ''}（就绪前禁用画笔）`;
     cls = 'warn';
   } else if (sam.status === 'encoding') {
-    text = `SAM：编码图像中${sam.lastEncodeMs != null ? '' : ''}（几何先顶着）`;
+    text = 'SAM：编码图像中（就绪前禁用画笔）';
     cls = 'warn';
   } else if (sam.status === 'ready') {
     const backend = sam.device === 'webgpu' ? 'WebGPU' : 'WASM';
@@ -558,9 +549,15 @@ function syncSamUi() {
   samStatusEl.className = `hint ${cls}`.trim();
   strokeSourceEl.textContent = `上一笔：${lastStrokeNote}`;
   strokeSourceEl.title = lastStrokeNote;
-  for (const b of promptModes.querySelectorAll('button')) {
-    b.classList.toggle('active', b.dataset.prompt === promptMode);
+
+  // The brush has no geometry fallback anymore: it is usable exactly when SAM
+  // can decode, and the status line above explains why it is not.
+  const brushOk = samCanDecode();
+  for (const b of toolModes.querySelectorAll<HTMLButtonElement>('button[data-tool="erase"], button[data-tool="restore"]')) {
+    b.disabled = !brushOk;
+    b.title = brushOk ? '' : 'SAM 未就绪，画笔不可用（原因见工具栏状态）';
   }
+  if (isBrush() && !brushOk) setTool('compare');
 }
 
 function refreshComposite() {
@@ -579,6 +576,7 @@ function imageFromEvent(e: PointerEvent | MouseEvent): Pt | null {
 }
 
 function setTool(next: Tool) {
+  if (next !== 'compare' && !samCanDecode()) return;
   tool = next;
   for (const b of toolModes.querySelectorAll('button')) {
     b.classList.toggle('active', b.dataset.tool === next);
@@ -586,7 +584,7 @@ function setTool(next: Tool) {
   dropzone.classList.toggle('brush-on', isBrush());
   handle.hidden = isBrush();
   stageHint.textContent = isBrush()
-    ? `在主体上涂抹即可${tool === 'restore' ? '恢复' : '擦除'} · [ ] 调半径 · 空格拖动画布`
+    ? `在主体上涂抹即可${tool === 'restore' ? '恢复' : '擦除'} · 松开后由 SAM 生成选区 · [ ] 调半径 · 空格拖动画布`
     : '拖动分隔条对比原图 · ⌘滚轮缩放 · 空格拖动';
   if (isBrush()) {
     canvasResult.style.clipPath = 'none';
@@ -598,14 +596,7 @@ function setTool(next: Tool) {
   }
 }
 
-function setPromptMode(next: PromptMode) {
-  promptMode = next;
-  syncSamUi();
-  if (next === 'sam') void ensureSam();
-}
-
 async function ensureSam() {
-  if (promptMode !== 'sam') return;
   const blocked = samBlockReason();
   if (blocked) {
     syncSamUi();
@@ -641,7 +632,6 @@ async function encodeCurrentIfNeeded() {
 
 function samCanDecode() {
   return (
-    promptMode === 'sam' &&
     !samBlockReason() &&
     sam.status === 'ready' &&
     !!source &&
@@ -650,30 +640,24 @@ function samCanDecode() {
   );
 }
 
-async function refineWithSam(stroke: Stroke) {
-  if (!source || !samCanDecode()) return;
+/** The only stroke path: decode the pointer path through SAM and commit it with its mask. */
+async function applyStrokeWithSam(points: Pt[], kind: StrokeKind, radius: number) {
+  const src = source;
+  if (!src) return;
   try {
-    const prompts = strokeToPrompts(stroke.points, source.width, source.height);
+    const prompts = strokeToPrompts(points, src.width, src.height);
     const res = await sam.decode(prompts.input_points, prompts.input_labels);
-    if (!source || res.width !== source.width || res.height !== source.height) {
-      lastStrokeNote = `几何（SAM 尺寸对不上，未替换）`;
-      lastStrokeSource = 'geometry';
+    if (source !== src || res.width !== src.width || res.height !== src.height) {
+      lastStrokeNote = '本笔丢弃（SAM 结果与当前图像不匹配）';
       syncSamUi();
       return;
     }
-    const live = brush.attachSamMask(stroke.id, res.mask);
-    if (!live) {
-      lastStrokeNote = `智能结果已附在撤销栈 · 候选 ${res.bestIndex + 1}/3`;
-      syncSamUi();
-      return;
-    }
-    lastStrokeSource = 'sam';
-    lastStrokeNote = `智能 · 候选 ${res.bestIndex + 1}/3 · IoU ${res.bestIou.toFixed(3)} · decode ${Math.round(res.decodeMs)} ms`;
+    brush.commit(createStroke({ points, radius, kind, samMask: res.mask }));
+    lastStrokeNote = `已应用 · 候选 ${res.bestIndex + 1}/3 · IoU ${res.bestIou.toFixed(3)} · decode ${Math.round(res.decodeMs)} ms`;
     refreshComposite();
     syncSamUi();
   } catch (err) {
-    lastStrokeSource = 'geometry';
-    lastStrokeNote = `几何（SAM 本笔失败：${shortError(err)}）`;
+    lastStrokeNote = `本笔丢弃（SAM 解码失败：${shortError(err)}）`;
     syncSamUi();
   }
 }
@@ -711,7 +695,6 @@ async function acceptFile(file: File | Blob) {
   brush.reset(bitmap.width, bitmap.height);
   liveStroke = null;
   lastStrokeNote = '—';
-  lastStrokeSource = 'geometry';
   resetView();
 
   imgOriginal.src = url;
@@ -729,7 +712,7 @@ async function acceptFile(file: File | Blob) {
   syncSamUi();
   render();
 
-  if (promptMode === 'sam') void ensureSam();
+  void ensureSam();
   void infer(file);
 }
 
@@ -983,11 +966,6 @@ toolModes.addEventListener('click', (e) => {
   if (!btn?.dataset.tool) return;
   setTool(btn.dataset.tool as Tool);
 });
-promptModes.addEventListener('click', (e) => {
-  const btn = (e.target as HTMLElement).closest('button');
-  if (!btn?.dataset.prompt) return;
-  setPromptMode(btn.dataset.prompt as PromptMode);
-});
 rngRadius.addEventListener('input', () => {
   brushRadius = clampRadius(parseFloat(rngRadius.value));
   syncBrushUi();
@@ -1015,7 +993,7 @@ function placeCursor(e: { clientX: number; clientY: number }) {
   brushCursor.style.top = `${e.clientY}px`;
   brushCursor.classList.toggle('kind-erase', brushKind() === 'erase');
   brushCursor.classList.toggle('kind-restore', brushKind() === 'restore');
-  brushCursor.classList.toggle('source-sam', samCanDecode());
+  brushCursor.classList.add('source-sam');
 }
 
 compare.addEventListener('pointermove', (e) => {
@@ -1028,10 +1006,7 @@ compare.addEventListener('pointermove', (e) => {
   }
   if (liveStroke) {
     const pt = imageFromEvent(e);
-    if (pt) {
-      liveStroke.points.push(pt);
-      refreshComposite();
-    }
+    if (pt) liveStroke.points.push(pt);
   }
   placeCursor(e);
 });
@@ -1046,10 +1021,10 @@ compare.addEventListener('pointerdown', (e) => {
     return;
   }
   if (!isBrush()) return;
-  if (e.button !== 0) return;
+  if (e.button !== 0 || !samCanDecode()) return;
   const pt = imageFromEvent(e);
   if (!pt) return;
-  liveStroke = createStroke({ points: [pt], radius: brushRadius, kind: brushKind() });
+  liveStroke = { points: [pt], radius: brushRadius, kind: brushKind() };
   compare.setPointerCapture(e.pointerId);
   refreshComposite();
   placeCursor(e);
@@ -1072,18 +1047,17 @@ function endStroke(e: PointerEvent) {
     return;
   }
   if (!liveStroke) return;
-  const stroke = liveStroke;
-  brush.commit(stroke);
+  const { points, radius, kind } = liveStroke;
   liveStroke = null;
-  lastStrokeSource = 'geometry';
-  lastStrokeNote = samCanDecode()
-    ? `几何占位 · 正在跑智能 decoder…`
-    : promptMode === 'sam'
-      ? `几何（${samBlockReason() || sam.reason || (sam.status === 'ready' ? '编码尚未完成' : sam.status === 'loading' || sam.status === 'encoding' ? 'SAM 尚未就绪' : 'SAM 不可用')}）`
-      : `几何 · ${stroke.kind === 'restore' ? '恢复' : '擦除'}`;
-  refreshComposite();
-  syncSamUi();
-  if (samCanDecode()) void refineWithSam(stroke);
+  if (!samCanDecode() || points.length === 0) {
+    lastStrokeNote = points.length === 0 ? '—' : `本笔丢弃（SAM 不可用：${samBlockReason() || sam.reason || '尚未就绪'}）`;
+    refreshComposite();
+    syncSamUi();
+  } else {
+    lastStrokeNote = '解码中…';
+    syncSamUi();
+    void applyStrokeWithSam(points, kind, radius);
+  }
   try {
     compare.releasePointerCapture(e.pointerId);
   } catch {
@@ -1212,14 +1186,8 @@ initDeviceBadge();
   get sam() {
     return sam;
   },
-  get promptMode() {
-    return promptMode;
-  },
   get tool() {
     return tool;
-  },
-  get lastStrokeSource() {
-    return lastStrokeSource;
   },
   get lastStrokeNote() {
     return lastStrokeNote;

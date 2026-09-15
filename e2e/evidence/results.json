@@ -1,50 +1,19 @@
 {
-  "sample": "/home/akrc/.paseo/worktrees/07eiew7y/feat-brush-erase/docs/demo/sample-input.jpg",
+  "sample": "/Users/akrc/Documents/GitHub/web-image-background-remover/docs/demo/sample-input.jpg",
   "abortedHub": true,
-  "before": {
+  "samStatusText": "SAM：不可用 · 无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），画笔已禁用。",
+  "loaded": {
     "width": 640,
     "height": 480,
-    "pixels": 307200,
-    "transparent": 0,
-    "minAlpha": 255,
     "meanAlpha": 255
-  },
-  "brushed": {
-    "width": 640,
-    "height": 480,
-    "pixels": 307200,
-    "transparent": 40102,
-    "minAlpha": 3,
-    "meanAlpha": 233.70512369791666
-  },
-  "undone": {
-    "width": 640,
-    "height": 480,
-    "pixels": 307200,
-    "transparent": 0,
-    "minAlpha": 255,
-    "meanAlpha": 255
-  },
-  "redone": {
-    "width": 640,
-    "height": 480,
-    "pixels": 307200,
-    "transparent": 40102,
-    "minAlpha": 3,
-    "meanAlpha": 233.70512369791666
   },
   "exported": {
     "width": 640,
     "height": 480,
-    "transparent": 40102,
-    "minAlpha": 3
+    "meanAlpha": 255
   },
-  "exportBytes": 852345,
-  "exportPath": "e2e/evidence/export.png",
+  "exportBytes": 848746,
   "screenshots": [
-    "e2e/evidence/01-loaded.png",
-    "e2e/evidence/02-brushed.png",
-    "e2e/evidence/03-undone.png",
-    "e2e/evidence/04-redone.png"
+    "e2e/evidence/01-loaded.png"
   ]
 }

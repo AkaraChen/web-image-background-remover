@@ -99,3 +99,12 @@
   - run 5: 7 passed / 0 failed / 15.8s
   - run 6: 7 passed / 0 failed / 16.8s
 - 阻塞项：全量 SlimSAM 管线仍要 `npm run test:sam`；本 builder 无 WebGPU。
+
+## R5-01 · 删除几何模式，画笔纯 SAM
+
+- 完成层级：几何/智能模式切换（`#prompt-modes`）连同整套几何栅格化（`rasterizeStroke` / `paintStroke` / 笔迹回落）从前端到 worker 路径全部删除。笔刷笔迹只在 SAM decode 成功后才成为 stroke（携带 `samMask`）；失败即丢弃并在「上一笔」说明原因。
+- 闸门：SAM 就绪（WebGPU + 编码完成）前，擦除/恢复按钮禁用，状态栏给出原因；图片载入后 SAM 自动 load+encode，无手动开关。
+- 工作单元：`index.html`（删切换块）、`src/brush.ts`（只剩 stroke 栈 + mask 混合）、`src/main.ts`（SAM 闸门 + commit-after-decode）、e2e 全面重写为「禁用即断言」，笔刷语义（擦除/恢复顺序、undo 不重解码）并入 `e2e/sam-brush.spec.ts`。
+- 证据：`npx playwright test` 6 passed / 11.7s；`npm run test:sam` 2 passed / 57.4s（`e2e/evidence/sam/results.json`）；真机 Chrome（M 系 / WebGPU fp16）冒烟：上传样张 → 自动载入（encode 1958 ms）→ 按钮解禁 → 画一笔 commit-after-decode（IoU 0.959 / decode 707 ms）。
+- 说明：`PROGRESS.md` 与 `docs/` 里历史条目中的「几何」是当时事实，保留不改。
+- 阻塞项：无
