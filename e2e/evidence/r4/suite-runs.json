@@ -1,0 +1,67 @@
+{
+  "command": "npx playwright test",
+  "choice": "Moved sam-brush.spec.ts out of the default suite (same as sam-feasibility). That file alone drove Chrome RSS to ~2.9GB on a box with ~4.6GB available; retries would only hide Target crashed. Default suite is now brush + p2 + worker-fail + dev-worker.",
+  "runs": [
+    {
+      "run": 1,
+      "exit": 0,
+      "elapsedSec": 18.7,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "ok": true,
+      "log": "e2e/evidence/r4/run-1.txt"
+    },
+    {
+      "run": 2,
+      "exit": 0,
+      "elapsedSec": 19.0,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "ok": true,
+      "log": "e2e/evidence/r4/run-2.txt"
+    },
+    {
+      "run": 3,
+      "exit": 0,
+      "elapsedSec": 17.8,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "ok": true,
+      "log": "e2e/evidence/r4/run-3.txt"
+    },
+    {
+      "run": 4,
+      "exit": 0,
+      "elapsedSec": 17.0,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "ok": true,
+      "log": "e2e/evidence/r4/run-4.txt"
+    },
+    {
+      "run": 5,
+      "exit": 0,
+      "elapsedSec": 15.8,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "ok": true,
+      "log": "e2e/evidence/r4/run-5.txt"
+    },
+    {
+      "run": 6,
+      "exit": 0,
+      "elapsedSec": 16.8,
+      "passed": 7,
+      "failed": 0,
+      "skipped": 0,
+      "ok": true,
+      "log": "e2e/evidence/r4/run-6.txt"
+    }
+  ],
+  "allGreen": true
+}

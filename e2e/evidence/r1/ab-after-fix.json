@@ -1,0 +1,43 @@
+{
+  "note": "Same Worker-ctor spy as the operator A/B. npx vite on :5199 after the boot/defer + injectQuery inline fix.",
+  "dump": {
+    "rmbgBooted": true,
+    "samBooted": true,
+    "probeAlive": {
+      "type": "probe-alive",
+      "t": 24.700000047683716
+    },
+    "workers": [
+      {
+        "url": "http://127.0.0.1:5199/src/sam-worker.ts?worker_file&type=module",
+        "type": "module",
+        "postN": 0,
+        "msgN": 1,
+        "errN": 0,
+        "msgTypes": [
+          "worker-boot"
+        ]
+      },
+      {
+        "url": "http://127.0.0.1:5199/src/worker.ts?worker_file&type=module",
+        "type": "module",
+        "postN": 0,
+        "msgN": 1,
+        "errN": 0,
+        "msgTypes": [
+          "worker-boot"
+        ]
+      },
+      {
+        "url": "http://127.0.0.1:5199/src/probe-worker.ts?worker_file&type=module",
+        "type": "module",
+        "postN": 0,
+        "msgN": 1,
+        "errN": 0,
+        "msgTypes": [
+          "probe-alive"
+        ]
+      }
+    ]
+  }
+}

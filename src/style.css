@@ -182,3 +182,36 @@ input[type="range"] { width: 100%; accent-color: var(--primary); }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 #timings { white-space: pre-line; }
+
+.dropzone.brush-on { cursor: none; }
+.dropzone.brush-on .compare { touch-action: none; }
+.dropzone.panning, .dropzone.panning * { cursor: grab !important; }
+.dropzone.panning.is-panning, .dropzone.panning.is-panning * { cursor: grabbing !important; }
+.handle[hidden] { display: none !important; }
+.brush-cursor {
+  position: fixed;
+  z-index: 8;
+  border: 1.5px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.brush-cursor.kind-erase {
+  border-color: #ff6b6b;
+  box-shadow: 0 0 0 1px rgba(90, 0, 0, 0.55);
+}
+.brush-cursor.kind-restore {
+  border-color: #3dcc7a;
+  box-shadow: 0 0 0 1px rgba(0, 70, 24, 0.55);
+}
+.brush-cursor.source-sam::after {
+  content: '';
+  position: absolute;
+  inset: 18%;
+  border: 1px dashed rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+}
+#sam-status.ok { color: #0a8f4d; }
+#sam-status.warn { color: #b45309; }
+#sam-status.bad { color: #b42318; }

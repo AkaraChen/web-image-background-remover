@@ -1,0 +1,33 @@
+{
+  "status": "SAM：不可用 · 无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），已回落几何。",
+  "info": {
+    "promptMode": "sam",
+    "tool": "erase",
+    "lastStrokeSource": "geometry",
+    "lastStrokeNote": "几何（无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），已回落几何。）",
+    "forceSamWasm": false,
+    "webgpuAdapterOk": false,
+    "view": {
+      "zoom": 1,
+      "x": 0,
+      "y": 0
+    },
+    "samStatus": "unloaded",
+    "encodeCount": 0,
+    "decodeCount": 0,
+    "samReason": "",
+    "samDevice": null,
+    "strokes": [
+      {
+        "kind": "erase",
+        "source": "geometry"
+      }
+    ]
+  },
+  "painted": {
+    "mean": 15.763997395833334,
+    "min": 3,
+    "max": 44,
+    "n": 12288
+  }
+}

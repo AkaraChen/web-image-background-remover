@@ -1,0 +1,20 @@
+
+Running 7 tests using 4 workers
+
+(node:479309) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:479310) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:479323) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:479317) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  4 [dev] › e2e/dev-worker.spec.ts:34:1 › npx vite: module workers reply (boot + zero-import probe) (1.6s)
+  ✓  3 [preview] › e2e/worker-fail.spec.ts:12:1 › SAM worker script 500 falls back to unavailable; geometry still paints (2.8s)
+  ✓  1 [preview] › e2e/brush.spec.ts:67:1 › P0 brush, undo/redo, PNG export work without a model (4.2s)
+  ✓  2 [preview] › e2e/p2.spec.ts:14:1 › P2 erase lowers alpha, restore raises it, later stroke wins (6.4s)
+  ✓  5 [preview] › e2e/p2.spec.ts:121:1 › promised keyboard shortcuts actually work (1.9s)
+  ✓  6 [preview] › e2e/p2.spec.ts:174:1 › SAM without WebGPU falls back to geometry and does not block (2.0s)
+  ✓  7 [preview] › e2e/p2.spec.ts:198:1 › SAM load failure with ?sam=wasm still paints geometrically (1.8s)
+
+  7 passed (16.5s)

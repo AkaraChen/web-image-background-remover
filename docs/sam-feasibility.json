@@ -1,0 +1,498 @@
+{
+  "measuredAt": "2026-09-14T15:19:42.280Z",
+  "host": "playwright chromium (this builder)",
+  "note": "All runtime numbers below are browser WASM. WebGPU inference was not run.",
+  "hfBlobs": {
+    "source": "GET https://huggingface.co/api/models/<repo>?blobs=true",
+    "slimsam": [
+      {
+        "rfilename": "config.json",
+        "size": 379,
+        "mb": 0
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder.onnx",
+        "size": 16557892,
+        "mb": 15.8
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_fp16.onnx",
+        "size": 8550118,
+        "mb": 8.2
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_quantized.onnx",
+        "size": 4903810,
+        "mb": 4.7
+      },
+      {
+        "rfilename": "onnx/vision_encoder.onnx",
+        "size": 23276014,
+        "mb": 22.2
+      },
+      {
+        "rfilename": "onnx/vision_encoder_fp16.onnx",
+        "size": 12170657,
+        "mb": 11.6
+      },
+      {
+        "rfilename": "onnx/vision_encoder_quantized.onnx",
+        "size": 8882165,
+        "mb": 8.5
+      },
+      {
+        "rfilename": "preprocessor_config.json",
+        "size": 466,
+        "mb": 0
+      },
+      {
+        "rfilename": "quantize_config.json",
+        "size": 2017,
+        "mb": 0
+      }
+    ],
+    "sam2_1_hiera_tiny": [
+      {
+        "rfilename": "config.json",
+        "size": 5814,
+        "mb": 0
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder.onnx",
+        "size": 213114,
+        "mb": 0.2
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder.onnx_data",
+        "size": 20958208,
+        "mb": 20
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_bnb4.onnx",
+        "size": 228219,
+        "mb": 0.2
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_bnb4.onnx_data",
+        "size": 6870016,
+        "mb": 6.6
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_fp16.onnx",
+        "size": 229799,
+        "mb": 0.2
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_fp16.onnx_data",
+        "size": 10454016,
+        "mb": 10
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_int8.onnx",
+        "size": 289885,
+        "mb": 0.3
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_int8.onnx_data",
+        "size": 8662016,
+        "mb": 8.3
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_q4.onnx",
+        "size": 226444,
+        "mb": 0.2
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_q4.onnx_data",
+        "size": 7130112,
+        "mb": 6.8
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_q4f16.onnx",
+        "size": 243598,
+        "mb": 0.2
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_q4f16.onnx_data",
+        "size": 4563968,
+        "mb": 4.4
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_quantized.onnx",
+        "size": 290416,
+        "mb": 0.3
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_quantized.onnx_data",
+        "size": 8662016,
+        "mb": 8.3
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_uint8.onnx",
+        "size": 290022,
+        "mb": 0.3
+      },
+      {
+        "rfilename": "onnx/prompt_encoder_mask_decoder_uint8.onnx_data",
+        "size": 8662016,
+        "mb": 8.3
+      },
+      {
+        "rfilename": "onnx/vision_encoder.onnx",
+        "size": 354238,
+        "mb": 0.3
+      },
+      {
+        "rfilename": "onnx/vision_encoder.onnx_data",
+        "size": 134084864,
+        "mb": 127.9
+      },
+      {
+        "rfilename": "onnx/vision_encoder_bnb4.onnx",
+        "size": 367275,
+        "mb": 0.4
+      },
+      {
+        "rfilename": "onnx/vision_encoder_bnb4.onnx_data",
+        "size": 42085568,
+        "mb": 40.1
+      },
+      {
+        "rfilename": "onnx/vision_encoder_fp16.onnx",
+        "size": 314925,
+        "mb": 0.3
+      },
+      {
+        "rfilename": "onnx/vision_encoder_fp16.onnx_data",
+        "size": 67005504,
+        "mb": 63.9
+      },
+      {
+        "rfilename": "onnx/vision_encoder_int8.onnx",
+        "size": 440423,
+        "mb": 0.4
+      },
+      {
+        "rfilename": "onnx/vision_encoder_int8.onnx_data",
+        "size": 52573088,
+        "mb": 50.1
+      },
+      {
+        "rfilename": "onnx/vision_encoder_q4.onnx",
+        "size": 366089,
+        "mb": 0.3
+      },
+      {
+        "rfilename": "onnx/vision_encoder_q4.onnx_data",
+        "size": 43758848,
+        "mb": 41.7
+      },
+      {
+        "rfilename": "onnx/vision_encoder_q4f16.onnx",
+        "size": 327108,
+        "mb": 0.3
+      },
+      {
+        "rfilename": "onnx/vision_encoder_q4f16.onnx_data",
+        "size": 28532736,
+        "mb": 27.2
+      },
+      {
+        "rfilename": "onnx/vision_encoder_quantized.onnx",
+        "size": 441167,
+        "mb": 0.4
+      },
+      {
+        "rfilename": "onnx/vision_encoder_quantized.onnx_data",
+        "size": 52573088,
+        "mb": 50.1
+      },
+      {
+        "rfilename": "onnx/vision_encoder_uint8.onnx",
+        "size": 440595,
+        "mb": 0.4
+      },
+      {
+        "rfilename": "onnx/vision_encoder_uint8.onnx_data",
+        "size": 52573088,
+        "mb": 50.1
+      },
+      {
+        "rfilename": "preprocessor_config.json",
+        "size": 749,
+        "mb": 0
+      },
+      {
+        "rfilename": "processor_config.json",
+        "size": 932,
+        "mb": 0
+      }
+    ]
+  },
+  "bench": {
+    "ok": true,
+    "backend": "wasm",
+    "dtype": "q8",
+    "model": "Xenova/slimsam-77-uniform",
+    "webgpu": {
+      "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+      "webgpuApi": true,
+      "webgpuAdapter": null,
+      "webgpuError": "requestAdapter() returned null"
+    },
+    "loadMs": 6016.5,
+    "sessionNames": [
+      "model",
+      "prompt_encoder_mask_decoder"
+    ],
+    "nativeRuns": [
+      {
+        "label": "native-640x480#0",
+        "width": 640,
+        "height": 480,
+        "encodeMs": 16407.10000014305,
+        "decodeMs": 252.89999985694885,
+        "postMs": 179.5,
+        "pixelValuesDims": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "imageEmbeddingsDims": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "predMasksDims": [
+          1,
+          1,
+          3,
+          256,
+          256
+        ],
+        "iouScores": [
+          0.9536393284797668,
+          0.9732699394226074,
+          0.942833662033081
+        ],
+        "maskDims": [
+          1,
+          3,
+          480,
+          640
+        ],
+        "nPositive": 9,
+        "nNegative": 3
+      },
+      {
+        "label": "native-640x480#1",
+        "width": 640,
+        "height": 480,
+        "encodeMs": 11252.700000047684,
+        "decodeMs": 274.2000000476837,
+        "postMs": 247.59999990463257,
+        "pixelValuesDims": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "imageEmbeddingsDims": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "predMasksDims": [
+          1,
+          1,
+          3,
+          256,
+          256
+        ],
+        "iouScores": [
+          0.9536393284797668,
+          0.9732699394226074,
+          0.942833662033081
+        ],
+        "maskDims": [
+          1,
+          3,
+          480,
+          640
+        ],
+        "nPositive": 9,
+        "nNegative": 3
+      },
+      {
+        "label": "native-640x480#2",
+        "width": 640,
+        "height": 480,
+        "encodeMs": 17424.599999904633,
+        "decodeMs": 916.7000000476837,
+        "postMs": 1477.2999999523163,
+        "pixelValuesDims": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "imageEmbeddingsDims": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "predMasksDims": [
+          1,
+          1,
+          3,
+          256,
+          256
+        ],
+        "iouScores": [
+          0.9536393284797668,
+          0.9732699394226074,
+          0.942833662033081
+        ],
+        "maskDims": [
+          1,
+          3,
+          480,
+          640
+        ],
+        "nPositive": 9,
+        "nNegative": 3
+      }
+    ],
+    "resizedRuns": [
+      {
+        "label": "resized-1000x1000#0",
+        "width": 1000,
+        "height": 1000,
+        "encodeMs": 24159.39999985695,
+        "decodeMs": 1027.2000000476837,
+        "postMs": 308.7000000476837,
+        "pixelValuesDims": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "imageEmbeddingsDims": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "predMasksDims": [
+          1,
+          1,
+          3,
+          256,
+          256
+        ],
+        "iouScores": [
+          0.9449164271354675,
+          0.9099774360656738,
+          0.821891188621521
+        ],
+        "maskDims": [
+          1,
+          3,
+          1000,
+          1000
+        ],
+        "nPositive": 13,
+        "nNegative": 3
+      },
+      {
+        "label": "resized-1000x1000#1",
+        "width": 1000,
+        "height": 1000,
+        "encodeMs": 18457,
+        "decodeMs": 239.60000014305115,
+        "postMs": 74.39999985694885,
+        "pixelValuesDims": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "imageEmbeddingsDims": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "predMasksDims": [
+          1,
+          1,
+          3,
+          256,
+          256
+        ],
+        "iouScores": [
+          0.9449164271354675,
+          0.9099774360656738,
+          0.821891188621521
+        ],
+        "maskDims": [
+          1,
+          3,
+          1000,
+          1000
+        ],
+        "nPositive": 13,
+        "nNegative": 3
+      },
+      {
+        "label": "resized-1000x1000#2",
+        "width": 1000,
+        "height": 1000,
+        "encodeMs": 12056.200000047684,
+        "decodeMs": 927.3000001907349,
+        "postMs": 8388.199999809265,
+        "pixelValuesDims": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "imageEmbeddingsDims": [
+          1,
+          256,
+          64,
+          64
+        ],
+        "predMasksDims": [
+          1,
+          1,
+          3,
+          256,
+          256
+        ],
+        "iouScores": [
+          0.9449164271354675,
+          0.9099774360656738,
+          0.821891188621521
+        ],
+        "maskDims": [
+          1,
+          3,
+          1000,
+          1000
+        ],
+        "nPositive": 13,
+        "nNegative": 3
+      }
+    ],
+    "nativeEncodeMedianMs": 16407.10000014305,
+    "nativeDecodeMedianMs": 274.2000000476837,
+    "resizedEncodeMedianMs": 18457,
+    "resizedDecodeMedianMs": 927.3000001907349,
+    "webgpuRuntime": "missing proof"
+  }
+}

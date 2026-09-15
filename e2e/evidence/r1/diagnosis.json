@@ -1,0 +1,13 @@
+{
+  "verdict": "started-but-blocked: Vite ?worker_file entries were evaluating, but onmessage was after the transformers→onnxruntime graph. That graph also imported /@vite/client (HMR).",
+  "not": "worker constructor broken; MIME; WebGPU; network; instrumentation",
+  "proof": {
+    "servedWorkerFilePrepends": "import \"/node_modules/vite/dist/client/env.mjs\"",
+    "servedOrtBeforeFix": "import { injectQuery as __vite__injectQuery } from \"/@vite/client\"",
+    "servedOrtAfterFix": "const __vite__injectQuery = (url, queryToInject) => { ... };  // 0 matches for @vite/client",
+    "zeroImportProbeOnSameViteUrl": "src/probe-worker.ts via new URL(..., import.meta.url) → probe-alive in 20–25ms",
+    "appWorkersAfterFix": "worker-boot MSG on both sam-worker.ts?worker_file and worker.ts?worker_file"
+  },
+  "whyPreviewWorked": "Rollup emits hashed worker chunks with no /@vite/client and a single-file evaluate, so onmessage is set before the page's first postMessage is dropped.",
+  "whyManualRawUrlWorked": "Bypasses the env.mjs prepend and often hits a warm module cache after the page already loaded ORT on the main thread; not the construction path the app uses."
+}

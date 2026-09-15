@@ -1,0 +1,90 @@
+{
+  "beforeBand": {
+    "mean": 255,
+    "min": 255,
+    "max": 255,
+    "n": 1560
+  },
+  "beforeCenter": {
+    "mean": 255,
+    "min": 255,
+    "max": 255,
+    "n": 1200
+  },
+  "erasedBand": {
+    "mean": 7.055128205128205,
+    "min": 3,
+    "max": 15,
+    "n": 1560
+  },
+  "erasedCenter": {
+    "mean": 5.545,
+    "min": 3,
+    "max": 9,
+    "n": 1200
+  },
+  "restoredBand": {
+    "mean": 7.055128205128205,
+    "min": 3,
+    "max": 15,
+    "n": 1560
+  },
+  "restoredCenter": {
+    "mean": 220.45083333333332,
+    "min": 143,
+    "max": 252,
+    "n": 1200
+  },
+  "maskRoi": {
+    "width": 640,
+    "height": 480,
+    "band": 7.055128205128205,
+    "center": 220.45083333333332
+  },
+  "restoreFirst": {
+    "mean": 255,
+    "min": 255,
+    "max": 255,
+    "n": 1200
+  },
+  "eraseLastCenter": {
+    "mean": 5.545,
+    "min": 3,
+    "max": 9,
+    "n": 1200
+  },
+  "eraseLastBand": {
+    "mean": 7.055128205128205,
+    "min": 3,
+    "max": 15,
+    "n": 1560
+  },
+  "debug": {
+    "promptMode": "geometry",
+    "tool": "erase",
+    "lastStrokeSource": "geometry",
+    "lastStrokeNote": "几何 · 擦除",
+    "forceSamWasm": false,
+    "webgpuAdapterOk": false,
+    "view": {
+      "zoom": 1,
+      "x": 0,
+      "y": 0
+    },
+    "samStatus": "unloaded",
+    "encodeCount": 0,
+    "decodeCount": 0,
+    "samReason": "",
+    "samDevice": null,
+    "strokes": [
+      {
+        "kind": "restore",
+        "source": "geometry"
+      },
+      {
+        "kind": "erase",
+        "source": "geometry"
+      }
+    ]
+  }
+}
