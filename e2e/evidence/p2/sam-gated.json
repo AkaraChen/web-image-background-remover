@@ -1,5 +1,5 @@
 {
-  "status": "SAM：不可用 · 无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），画笔已禁用。",
+  "title": "SAM 未就绪，画笔不可用：无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），画笔已禁用。",
   "info": {
     "tool": "compare",
     "lastStrokeNote": "—",

@@ -20,7 +20,7 @@
   },
   "afterFirst": {
     "tool": "erase",
-    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.960 · decode 146 ms",
+    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.960 · decode 262 ms",
     "forceSamWasm": true,
     "webgpuAdapterOk": false,
     "view": {
@@ -54,7 +54,7 @@
   },
   "afterSecond": {
     "tool": "restore",
-    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.952 · decode 116 ms",
+    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.952 · decode 173 ms",
     "forceSamWasm": true,
     "webgpuAdapterOk": false,
     "view": {
@@ -86,7 +86,7 @@
   },
   "afterUndo": {
     "tool": "restore",
-    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.952 · decode 116 ms",
+    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.952 · decode 173 ms",
     "forceSamWasm": true,
     "webgpuAdapterOk": false,
     "view": {
@@ -108,7 +108,7 @@
   },
   "afterRedo": {
     "tool": "restore",
-    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.952 · decode 116 ms",
+    "lastStrokeNote": "已应用 · 候选 1/3 · IoU 0.952 · decode 173 ms",
     "forceSamWasm": true,
     "webgpuAdapterOk": false,
     "view": {

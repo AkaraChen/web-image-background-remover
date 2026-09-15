@@ -1,7 +1,7 @@
 {
   "sample": "/Users/akrc/Documents/GitHub/web-image-background-remover/docs/demo/sample-input.jpg",
   "abortedHub": true,
-  "samStatusText": "SAM：不可用 · 无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），画笔已禁用。",
+  "brushTooltip": "SAM 未就绪，画笔不可用：无 WebGPU。交互闸门要 WebGPU（WASM 每笔过不了 150 ms），画笔已禁用。",
   "loaded": {
     "width": 640,
     "height": 480,

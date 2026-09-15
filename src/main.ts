@@ -41,8 +41,6 @@ const btnDownload = $<HTMLButtonElement>('btn-download');
 const btnDownloadMask = $<HTMLButtonElement>('btn-download-mask');
 const timings = $<HTMLParagraphElement>('timings');
 const toolModes = $<HTMLDivElement>('tool-modes');
-const samStatusEl = $<HTMLParagraphElement>('sam-status');
-const strokeSourceEl = $<HTMLParagraphElement>('stroke-source');
 const rngRadius = $<HTMLInputElement>('rng-radius');
 const valRadius = $<HTMLElement>('val-radius');
 const btnUndo = $<HTMLButtonElement>('btn-undo');
@@ -520,42 +518,25 @@ function syncBrushUi() {
   valRadius.textContent = String(brushRadius);
 }
 
+/**
+ * SAM state lives in the brush buttons themselves, not in a status readout:
+ * usable exactly when SAM can decode; otherwise disabled with the reason in
+ * the tooltip. `lastStrokeNote` remains on __cutout for tests.
+ */
 function syncSamUi() {
   const blocked = samBlockReason();
-  let text: string;
-  let cls = '';
-  if (blocked) {
-    text = `SAM：不可用 · ${blocked}`;
-    cls = 'bad';
-  } else if (sam.status === 'unloaded') {
-    text = 'SAM：未加载（载入图片后自动加载）';
-  } else if (sam.status === 'loading') {
-    text = `SAM：加载中${sam.reason ? ` · ${sam.reason}` : ''}（就绪前禁用画笔）`;
-    cls = 'warn';
-  } else if (sam.status === 'encoding') {
-    text = 'SAM：编码图像中（就绪前禁用画笔）';
-    cls = 'warn';
-  } else if (sam.status === 'ready') {
-    const backend = sam.device === 'webgpu' ? 'WebGPU' : 'WASM';
-    const ms = sam.lastEncodeMs != null ? ` · encode ${Math.round(sam.lastEncodeMs)} ms` : '';
-    text = `SAM：就绪 · ${backend}${sam.dtype ? ` ${sam.dtype}` : ''}${ms}`;
-    cls = 'ok';
-  } else {
-    text = `SAM：不可用 · ${sam.reason || '未知原因'}`;
-    cls = 'bad';
-  }
-  samStatusEl.textContent = text;
-  samStatusEl.title = text;
-  samStatusEl.className = `hint ${cls}`.trim();
-  strokeSourceEl.textContent = `上一笔：${lastStrokeNote}`;
-  strokeSourceEl.title = lastStrokeNote;
+  let reason: string;
+  if (blocked) reason = blocked;
+  else if (sam.status === 'unloaded') reason = '载入图片后自动加载';
+  else if (sam.status === 'loading') reason = sam.reason ? `加载中 · ${sam.reason}` : '加载中';
+  else if (sam.status === 'encoding') reason = '编码图像中';
+  else if (sam.status === 'unavailable') reason = sam.reason || '未知原因';
+  else reason = '';
 
-  // The brush has no geometry fallback anymore: it is usable exactly when SAM
-  // can decode, and the status line above explains why it is not.
   const brushOk = samCanDecode();
   for (const b of toolModes.querySelectorAll<HTMLButtonElement>('button[data-tool="erase"], button[data-tool="restore"]')) {
     b.disabled = !brushOk;
-    b.title = brushOk ? '' : 'SAM 未就绪，画笔不可用（原因见工具栏状态）';
+    b.title = brushOk ? '' : `SAM 未就绪，画笔不可用：${reason}`;
   }
   if (isBrush() && !brushOk) setTool('compare');
 }

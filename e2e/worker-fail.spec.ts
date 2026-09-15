@@ -24,23 +24,21 @@ test('SAM worker script 500 marks SAM unavailable and gates the brush', async ({
   await waitCanvas(page);
 
   await page.waitForFunction(() => {
-    const t = document.querySelector('[data-testid="sam-status"]')?.textContent ?? '';
-    return /不可用/.test(t) && !/加载中/.test(t);
+    const c = (window as unknown as { __cutout?: { sam?: { status: string } } }).__cutout;
+    return c?.sam?.status === 'unavailable';
   });
-
-  const status = (await page.getByTestId('sam-status').textContent()) ?? '';
-  expect(status).toMatch(/不可用/);
-  expect(status).not.toMatch(/加载中/);
 
   await expect(page.getByTestId('tool-brush')).toBeDisabled();
   await expect(page.getByTestId('tool-restore')).toBeDisabled();
   await expect(page.getByTestId('btn-undo')).toBeDisabled();
+  const title = (await page.getByTestId('tool-brush').getAttribute('title')) ?? '';
+  expect(title).toMatch(/SAM 未就绪，画笔不可用/);
 
   const info = await debug(page);
   expect(info.samStatus).toBe('unavailable');
   expect(info.strokes.length).toBe(0);
   expect(info.tool).toBe('compare');
 
-  fs.writeFileSync(path.join(evidenceDir, 'worker-fail.json'), JSON.stringify({ status, info }, null, 2));
+  fs.writeFileSync(path.join(evidenceDir, 'worker-fail.json'), JSON.stringify({ title, info }, null, 2));
   await page.screenshot({ path: path.join(evidenceDir, 'worker-fail.png'), fullPage: true });
 });

@@ -1,5 +1,5 @@
 {
-  "status": "SAM：不可用 · SAM worker failed to load",
+  "title": "SAM 未就绪，画笔不可用：SAM worker failed to load",
   "info": {
     "tool": "compare",
     "lastStrokeNote": "—",

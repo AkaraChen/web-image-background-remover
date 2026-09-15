@@ -1,5 +1,5 @@
 {
-  "measuredAt": "2026-09-15T16:04:27.263Z",
+  "measuredAt": "2026-09-15T16:07:36.971Z",
   "host": "playwright chromium (this builder)",
   "note": "All runtime numbers below are browser WASM. WebGPU inference was not run.",
   "hfBlobs": {
@@ -240,7 +240,7 @@
       "webgpuAdapter": null,
       "webgpuError": "requestAdapter() returned null"
     },
-    "loadMs": 23086.79999999702,
+    "loadMs": 16901.10000000894,
     "sessionNames": [
       "model",
       "prompt_encoder_mask_decoder"
@@ -250,9 +250,9 @@
         "label": "native-640x480#0",
         "width": 640,
         "height": 480,
-        "encodeMs": 4055.3999999910593,
-        "decodeMs": 120.5,
-        "postMs": 46.400000005960464,
+        "encodeMs": 3864,
+        "decodeMs": 111.3999999910593,
+        "postMs": 43.20000000298023,
         "pixelValuesDims": [
           1,
           3,
@@ -290,9 +290,9 @@
         "label": "native-640x480#1",
         "width": 640,
         "height": 480,
-        "encodeMs": 4241.5,
-        "decodeMs": 119.80000001192093,
-        "postMs": 48.5,
+        "encodeMs": 3848.5999999940395,
+        "decodeMs": 109.79999999701977,
+        "postMs": 44.70000000298023,
         "pixelValuesDims": [
           1,
           3,
@@ -330,9 +330,9 @@
         "label": "native-640x480#2",
         "width": 640,
         "height": 480,
-        "encodeMs": 5242.79999999702,
-        "decodeMs": 114.59999999403954,
-        "postMs": 40.70000000298023,
+        "encodeMs": 5241,
+        "decodeMs": 138.79999999701977,
+        "postMs": 54,
         "pixelValuesDims": [
           1,
           3,
@@ -372,9 +372,9 @@
         "label": "resized-1000x1000#0",
         "width": 1000,
         "height": 1000,
-        "encodeMs": 3954.800000011921,
-        "decodeMs": 114.8999999910593,
-        "postMs": 24.700000002980232,
+        "encodeMs": 5040.5,
+        "decodeMs": 154.90000000596046,
+        "postMs": 33.19999998807907,
         "pixelValuesDims": [
           1,
           3,
@@ -412,9 +412,9 @@
         "label": "resized-1000x1000#1",
         "width": 1000,
         "height": 1000,
-        "encodeMs": 3963.5,
-        "decodeMs": 114.5,
-        "postMs": 23.600000008940697,
+        "encodeMs": 5644.70000000298,
+        "decodeMs": 147.79999999701977,
+        "postMs": 51.79999999701977,
         "pixelValuesDims": [
           1,
           3,
@@ -452,9 +452,9 @@
         "label": "resized-1000x1000#2",
         "width": 1000,
         "height": 1000,
-        "encodeMs": 4232.20000000298,
-        "decodeMs": 109.1000000089407,
-        "postMs": 20,
+        "encodeMs": 5455.29999999702,
+        "decodeMs": 115.6000000089407,
+        "postMs": 23.799999997019768,
         "pixelValuesDims": [
           1,
           3,
@@ -489,10 +489,10 @@
         "nNegative": 3
       }
     ],
-    "nativeEncodeMedianMs": 4241.5,
-    "nativeDecodeMedianMs": 119.80000001192093,
-    "resizedEncodeMedianMs": 3963.5,
-    "resizedDecodeMedianMs": 114.5,
+    "nativeEncodeMedianMs": 3864,
+    "nativeDecodeMedianMs": 111.3999999910593,
+    "resizedEncodeMedianMs": 5455.29999999702,
+    "resizedDecodeMedianMs": 147.79999999701977,
     "webgpuRuntime": "missing proof"
   }
 }

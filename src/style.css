@@ -178,18 +178,6 @@ button:focus-visible, select:focus-visible, input:focus-visible {
   text-transform: uppercase;
   color: var(--muted-2);
 }
-.tool-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 160px;
-  max-width: 280px;
-}
-.tool-meta .hint {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .hint { margin: 0; font-size: 12px; color: var(--muted); line-height: 1.45; }
 .hint.center { text-align: center; }
 #model-note {
@@ -495,9 +483,6 @@ button.btn-upload:hover:not(:disabled) { background: var(--primary-hover); }
   border: 1px dashed rgba(255, 255, 255, 0.9);
   border-radius: 50%;
 }
-#sam-status.ok { color: #0a8f4d; }
-#sam-status.warn { color: #b45309; }
-#sam-status.bad { color: #b42318; }
 
 @media (max-width: 860px) {
   .topbar { height: auto; min-height: var(--header-h); padding: 10px 14px; flex-wrap: wrap; }

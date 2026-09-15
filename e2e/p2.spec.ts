@@ -64,16 +64,15 @@ test('when SAM cannot serve, the brush is disabled with a reason and never block
     const c = (window as unknown as { __cutout?: { sam?: { status: string }; webgpuAdapterOk?: boolean } }).__cutout;
     return c?.sam?.status === 'unavailable' || c?.webgpuAdapterOk === false;
   });
-  const status = (await page.getByTestId('sam-status').textContent()) ?? '';
-  expect(status).toMatch(/不可用/);
-
   await expect(page.getByTestId('tool-brush')).toBeDisabled();
   await expect(page.getByTestId('tool-restore')).toBeDisabled();
+  const title = (await page.getByTestId('tool-brush').getAttribute('title')) ?? '';
+  expect(title).toMatch(/SAM 未就绪，画笔不可用/);
   const info = await debug(page);
   expect(info.tool).toBe('compare');
   expect(info.strokes.length).toBe(0);
 
-  fs.writeFileSync(path.join(evidenceDir, 'sam-gated.json'), JSON.stringify({ status, info }, null, 2));
+  fs.writeFileSync(path.join(evidenceDir, 'sam-gated.json'), JSON.stringify({ title, info }, null, 2));
   await page.screenshot({ path: path.join(evidenceDir, '04-sam-gated.png'), fullPage: true });
 });
 

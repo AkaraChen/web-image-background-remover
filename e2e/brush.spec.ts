@@ -47,9 +47,9 @@ test('P0 without a SAM model: brush is disabled with a reason, page still works'
   });
   await expect(page.getByTestId('tool-brush')).toBeDisabled();
   await expect(page.getByTestId('tool-restore')).toBeDisabled();
-  const status = (await page.getByTestId('sam-status').textContent()) ?? '';
-  expect(status).toMatch(/不可用/);
-  expect((await page.getByTestId('stroke-source').textContent()) ?? '').toContain('—');
+  const title = (await page.getByTestId('tool-brush').getAttribute('title')) ?? '';
+  expect(title).toMatch(/SAM 未就绪，画笔不可用/);
+  expect(title.length).toBeGreaterThan('SAM 未就绪，画笔不可用：'.length); // a real reason follows
 
   const loaded = await canvasStats(page);
   await page.screenshot({ path: path.join(evidenceDir, '01-loaded.png'), fullPage: true });
@@ -89,7 +89,7 @@ test('P0 without a SAM model: brush is disabled with a reason, page still works'
   const report = {
     sample,
     abortedHub: true,
-    samStatusText: status,
+    brushTooltip: title,
     loaded,
     exported,
     exportBytes: buf.length,
