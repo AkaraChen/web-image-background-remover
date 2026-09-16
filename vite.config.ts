@@ -1,3 +1,4 @@
+import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
 
 /**
@@ -34,7 +35,7 @@ function inlineInjectQueryInNodeModules(): Plugin {
 export default defineConfig({
   server: { port: 5173, host: true },
   worker: { format: 'es' },
-  plugins: [inlineInjectQueryInNodeModules()],
+  plugins: [react(), inlineInjectQueryInNodeModules()],
   // transformers.js ships its own onnxruntime-web build; pre-bundling breaks the wasm paths
   optimizeDeps: { exclude: ['@huggingface/transformers'] },
   build: { target: 'esnext' },
