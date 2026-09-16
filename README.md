@@ -69,7 +69,9 @@ npm run build    # 静态产物在 dist/
 index.html      页面骨架
 src/models.ts   模型注册表（体积 / 授权 / 各后端推荐精度）
 src/worker.ts   推理 worker：拉权重、跑 pipeline、抽出 alpha
-src/main.ts     UI、设备与精度探测、自动回退、合成、对比滑块
+src/main.tsx    React 入口
+src/store/      Zustand UI 状态
+src/cutout/     合成 / Worker / SAM 笔刷会话
 src/style.css   自适应深浅色的样式
 docs/demo/      实测样张（sample-input.jpg → cutout-rmbg14-fp16-webgpu.jpg）
 ```
